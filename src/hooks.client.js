@@ -8,16 +8,16 @@ export async function handle({ event, resolve }) {
 			auth.set({
 				isAuthenticated: true,
 				user,
-				role: user.role
+				role: user.role,
+				loading: false
 			});
+			return resolve(event);
 		}
+		// eslint-disable-next-line no-unused-vars
 	} catch (err) {
-		console.error('Error fetching user:', err);
-		auth.set({
-			isAuthenticated: false,
-			user: null,
-			role: null
-		});
+		// fail silently
 	}
+
+	auth.set({ isAuthenticated: false, user: null, role: null, loading: false });
 	return resolve(event);
 }
