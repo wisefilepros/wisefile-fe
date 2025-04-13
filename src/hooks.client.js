@@ -5,11 +5,19 @@ export async function handle({ event, resolve }) {
 		const res = await fetch('/api/auth/me', { credentials: 'include' });
 		if (res.ok) {
 			const user = await res.json();
-			auth.set({ isAuthenticated: true, user, role: user.role });
+			auth.set({
+				isAuthenticated: true,
+				user,
+				role: user.role
+			});
 		}
-	} catch (e) {
-		// silently fail
-        console.error('Failed to fetch user info:', e);
+	} catch (err) {
+		console.error('Error fetching user:', err);
+		auth.set({
+			isAuthenticated: false,
+			user: null,
+			role: null
+		});
 	}
 	return resolve(event);
 }
