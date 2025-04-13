@@ -7,25 +7,27 @@
 	let email = '';
 	let password = '';
 	let error = '';
+	let isLoading = false;
 
 	async function handleLogin() {
 		error = '';
+		isLoading = true;
+
 		try {
 			const user = await apiFetch('/api/auth/login', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email, password })
 			});
+
 			auth.set({ isAuthenticated: true, user, role: user.role });
 			goto('/dashboard');
 		} catch (err) {
 			error = err.message;
+		} finally {
+			isLoading = false;
 		}
 	}
-
-	onMount(() => {
-		auth.set({ isAuthenticated: false, user: null, role: null });
-	});
 </script>
 
 <div class="flex min-h-screen items-center justify-center bg-gray-100">
@@ -55,9 +57,17 @@
 
 			<button
 				type="submit"
-				class="w-full rounded bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700"
+				class="w-full rounded bg-blue-600 py-2 text-white hover:bg-blue-700"
+				disabled={isLoading}
 			>
-				Log in
+				{#if isLoading}
+					<span
+						class="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent align-middle"
+					></span>
+					Logging in...
+				{:else}
+					Log in
+				{/if}
 			</button>
 		</form>
 	</div>
