@@ -1,24 +1,28 @@
 import { auth } from '$lib/stores/auth';
 
-export async function handle({ event, resolve }) {
-	const isPublicRoute = event.url.pathname === '/login';
+let alreadyChecked = false;
 
-	if (isPublicRoute) {
-		auth.set({ isAuthenticated: false, user: null, role: null, loading: false });
-		return resolve(event);
-	}
+export async function handle({ event, resolve }) {
+	if (alreadyChecked) return resolve(event);
+	alreadyChecked = true;
+
+	const isPublicRoute = event.url.pathname === '/';
 
 	try {
-		const res = await fetch('/api/auth/me', { credentials: 'include' });
+		if (!isPublicRoute) {
+			const res = await fetch('/api/auth/me', { credentials: 'include' });
 
-		if (res.ok) {
-			const user = await res.json();
-			auth.set({
-				isAuthenticated: true,
-				user,
-				role: user.role,
-				loading: false
-			});
+			if (res.ok) {
+				const user = await res.json();
+				auth.set({
+					isAuthenticated: true,
+					user,
+					role: user.role,
+					loading: false
+				});
+			} else {
+				auth.set({ isAuthenticated: false, user: null, role: null, loading: false });
+			}
 		} else {
 			auth.set({ isAuthenticated: false, user: null, role: null, loading: false });
 		}
