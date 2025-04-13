@@ -11,7 +11,7 @@
 		}
 
 		auth.set({ isAuthenticated: false, user: null, role: null });
-		goto('/login');
+		goto('/');
 	}
 </script>
 
