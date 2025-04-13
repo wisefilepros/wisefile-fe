@@ -1,9 +1,5 @@
-import { redirect } from '@sveltejs/kit';
+import { requireAuth } from '$lib/utils/requireAuth';
 
-/** @type {import('./$types').LayoutServerLoad} */
-export async function load({ cookies }) {
-	const token = cookies.get('accessToken');
-	if (!token) {
-		throw redirect(302, '/login');
-	}
+export function load({ cookies }) {
+	requireAuth(cookies);
 }
