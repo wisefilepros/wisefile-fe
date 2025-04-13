@@ -3,8 +3,20 @@
 	import { auth } from '$lib/stores/auth';
 	import Loader from '$lib/components/Loader.svelte';
 
+	export let data;
+
+	$: if (data?.user) {
+		auth.set({
+			isAuthenticated: true,
+			user: data.user,
+			role: data.user.role,
+			loading: false
+		});
+	}
+
 	let showRouteLoader = false;
 	let timeout;
+
 	$: {
 		if ($navigating) {
 			showRouteLoader = true;
