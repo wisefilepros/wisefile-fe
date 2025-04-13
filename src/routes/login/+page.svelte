@@ -12,15 +12,11 @@
 		error = '';
 
 		try {
-			const res = await apiFetch('/api/auth/login', {
+			const user = await apiFetch('/api/auth/login', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email, password })
 			});
-			if (!res.ok) {
-				throw new Error('Login failed. Please check your credentials.');
-			}
-			const user = await res.json();
 
 			auth.set({
 				isAuthenticated: true,
