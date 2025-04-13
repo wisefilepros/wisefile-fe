@@ -6,3 +6,7 @@ export const auth = writable({
 	role: null,
 	loading: true
 });
+
+auth.subscribe((value) => {
+	console.log('[AUTH STATE]', value);
+});
