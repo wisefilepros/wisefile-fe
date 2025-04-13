@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { apiFetch } from '$lib/api/fetchWithBase';
 	import { auth } from '$lib/stores/auth';
 	import { onMount } from 'svelte';
 
@@ -11,18 +12,14 @@
 		error = '';
 
 		try {
-			const res = await fetch('/api/auth/login', {
+			const res = await apiFetch('/api/auth/login', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				credentials: 'include', // send cookie
 				body: JSON.stringify({ email, password })
 			});
-
 			if (!res.ok) {
-				const err = await res.json();
-				throw new Error(err.message || 'Login failed');
+				throw new Error('Login failed. Please check your credentials.');
 			}
-
 			const user = await res.json();
 
 			auth.set({
