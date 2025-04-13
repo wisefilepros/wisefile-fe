@@ -10,20 +10,13 @@
 
 	async function handleLogin() {
 		error = '';
-
 		try {
 			const user = await apiFetch('/api/auth/login', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email, password })
 			});
-
-			auth.set({
-				isAuthenticated: true,
-				user,
-				role: user.role
-			});
-
+			auth.set({ isAuthenticated: true, user, role: user.role });
 			goto('/dashboard');
 		} catch (err) {
 			error = err.message;
@@ -31,25 +24,25 @@
 	}
 
 	onMount(() => {
-		auth.set({ isAuthenticated: false, user: null, role: null }); // reset auth
+		auth.set({ isAuthenticated: false, user: null, role: null });
 	});
 </script>
 
-<div class="flex min-h-screen items-center justify-center bg-gray-100 px-4">
-	<div class="w-full max-w-md rounded-lg bg-white p-8 shadow">
-		<h1 class="mb-6 text-2xl font-bold">Log In</h1>
+<div class="flex min-h-screen items-center justify-center bg-gray-100">
+	<div class="w-full max-w-sm space-y-6 rounded-lg bg-white p-8 shadow-md">
+		<h1 class="text-center text-2xl font-bold text-gray-800">WiseFile</h1>
 
 		{#if error}
-			<p class="mb-4 text-sm text-red-600">{error}</p>
+			<p class="rounded bg-red-100 p-2 text-center text-sm text-red-700">{error}</p>
 		{/if}
 
 		<form on:submit|preventDefault={handleLogin} class="space-y-4">
 			<input
 				type="email"
-				placeholder="Email"
+				placeholder="Email address"
 				bind:value={email}
 				required
-				class="w-full rounded border border-gray-300 px-3 py-2"
+				class="w-full rounded border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
 			/>
 
 			<input
@@ -57,14 +50,14 @@
 				placeholder="Password"
 				bind:value={password}
 				required
-				class="w-full rounded border border-gray-300 px-3 py-2"
+				class="w-full rounded border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
 			/>
 
 			<button
 				type="submit"
-				class="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+				class="w-full rounded bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700"
 			>
-				Log In
+				Log in
 			</button>
 		</form>
 	</div>
