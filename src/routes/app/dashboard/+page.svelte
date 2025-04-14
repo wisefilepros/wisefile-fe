@@ -31,33 +31,36 @@
 </div>
 
 <!-- Table for Activity Log -->
-<div class="mt-6 max-h-[calc(100vh-24px)] overflow-hidden rounded-lg bg-white shadow-md">
-	<div class="max-h-[calc(100vh-24px)] overflow-y-auto">
-		<table class="min-w-full divide-y divide-gray-200 text-left text-sm">
-			<thead class="sticky top-0 z-10 bg-gray-700 text-xs font-medium uppercase text-white">
-				<tr>
-					<th class="px-4 py-2">Action</th>
-					<th class="px-4 py-2">Details</th>
-					<th class="px-4 py-2">User ID</th>
-					<th class="px-4 py-2">Timestamp</th>
-				</tr>
-			</thead>
-			<tbody class="divide-y divide-gray-200">
-				{#each activityLog as log, i}
-					<tr class="odd:bg-white even:bg-gray-100 hover:bg-gray-200">
-						<td class="px-4 py-2"
-							>{capitalizeFirstLetter(log.action)} {capitalizeFirstLetter(log.entity_type)}</td
-						>
-						<td class="px-4 py-2">{log.details}</td>
-						<td class="px-4 py-2">{log.user_id}</td>
-						<td class="px-4 py-2">{new Date(log.timestamp).toLocaleString()}</td>
-					</tr>
-				{:else}
-					<tr>
-						<td class="px-4 py-2 italic text-gray-400" colspan="4"> No activity found </td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
+<div class="bg-white shadow-md rounded-lg mt-6">
+	<!-- Scrollable container -->
+	<div class="overflow-y-auto max-h-[calc(100vh-250px)]">
+	  <table class="min-w-full divide-y divide-gray-200 text-left text-sm">
+		<thead class="sticky top-0 z-10 bg-gray-700 text-xs font-medium uppercase text-white">
+		  <tr>
+			<th class="px-4 py-2">Action</th>
+			<th class="px-4 py-2">Details</th>
+			<th class="px-4 py-2">User ID</th>
+			<th class="px-4 py-2">Timestamp</th>
+		  </tr>
+		</thead>
+		<tbody class="divide-y divide-gray-200">
+		  {#each activityLog as log}
+			<tr class="odd:bg-white even:bg-gray-50 hover:bg-gray-100">
+			  <td class="px-4 py-2">
+				{capitalizeFirstLetter(log.action)} {capitalizeFirstLetter(log.entity_type)}
+			  </td>
+			  <td class="px-4 py-2">{log.details}</td>
+			  <td class="px-4 py-2">{log.user_id}</td>
+			  <td class="px-4 py-2">{new Date(log.timestamp).toLocaleString()}</td>
+			</tr>
+		  {:else}
+			<tr>
+			  <td class="px-4 py-2 italic text-gray-400" colspan="4">
+				No activity found
+			  </td>
+			</tr>
+		  {/each}
+		</tbody>
+	  </table>
 	</div>
-</div>
+  </div>
