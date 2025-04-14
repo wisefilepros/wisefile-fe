@@ -43,14 +43,20 @@
 
 {#if $auth.loading}
 	<Loader message="Checking session..." />
-{:else if showRouteLoader}
-	<Loader message="Loading page..." />
 {:else}
 	<div class="flex min-h-screen bg-gray-100">
+		<!-- Sidebar wrapper -->
 		<div role="region" on:mouseenter={toggleExpand} on:mouseleave={collapse}>
 			<Sidebar {expanded} />
 		</div>
-		<div class="flex-1 p-6">
+
+		<!-- Main content wrapper -->
+		<div class="relative flex-1 p-6">
+			{#if showRouteLoader}
+				<div class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/60">
+					<Loader message="Loading page..." />
+				</div>
+			{/if}
 			<slot />
 		</div>
 	</div>
