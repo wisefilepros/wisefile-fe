@@ -25,18 +25,29 @@
 			const matchesCourt = !selectedCourt || c.court_name === selectedCourt;
 			return matchesSearch && matchesOperator && matchesAttorney && matchesCourt;
 		});
+
+	function clearFilters() {
+		searchTerm = '';
+		selectedOperator = '';
+		selectedAttorney = '';
+		selectedCourt = '';
+	}
 </script>
 
-<!-- Search & Filter Controls -->
+<!-- Search + Filter Controls -->
 <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
-	<input
-		type="text"
-		placeholder="Search cases..."
-		bind:value={searchTerm}
-		class="flex-grow rounded-md border border-gray-300 bg-white px-4 py-2 shadow-sm focus:border-blue-300 focus:outline-none focus:ring"
-	/>
+	<!-- Search Bar -->
+	<div class="flex flex-grow items-center gap-2">
+		<input
+			type="text"
+			placeholder="Search cases..."
+			bind:value={searchTerm}
+			class="flex-grow rounded-md border border-gray-300 bg-white px-4 py-2 shadow-sm focus:border-blue-300 focus:outline-none focus:ring"
+		/>
+	</div>
 
-	<div class="flex gap-2">
+	<!-- Dropdown Filters -->
+	<div class="flex items-center gap-2">
 		<select
 			bind:value={selectedOperator}
 			class="rounded border border-gray-300 bg-white px-3 py-2 text-sm"
@@ -66,9 +77,20 @@
 				<option value={ct}>{ct}</option>
 			{/each}
 		</select>
+
+		<button
+			on:click={clearFilters}
+			disabled={!searchTerm && !selectedOperator && !selectedAttorney && !selectedCourt}
+			class="rounded-md bg-gray-400 px-3 py-2 text-sm text-white hover:bg-gray-500"
+		>
+			Clear
+		</button>
 	</div>
 
-	<button class="ml-auto rounded-md bg-gray-700 px-4 py-2 text-white shadow-sm hover:bg-gray-800">
+	<!-- New Case Button -->
+	<button
+		class="whitespace-nowrap rounded-md bg-gray-700 px-4 py-2 text-white shadow-sm hover:bg-gray-800"
+	>
 		+ New Case
 	</button>
 </div>
