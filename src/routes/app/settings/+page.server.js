@@ -9,8 +9,7 @@ export async function load({ cookies }) {
 
 		// Use /me to get the user's ID
 		const me = await apiFetchServer('/api/auth/me', { cookie: cookieHeader });
-
-		const result = await apiFetchServer(`/api/users/${me.id}`, {
+		const result = await apiFetchServer(`/api/users/${me._id}`, {
 			cookie: cookieHeader
 		});
 
