@@ -54,10 +54,9 @@
 	$: currentPath = $page.url.pathname;
 </script>
 
-<!-- 🧱 Outer Sidebar Container (this wraps nav + logout like before) -->
 <div
 	role="navigation"
-	class={`flex min-h-screen flex-col bg-gray-900 text-white transition-[width] duration-300 ease-in-out ${
+	class={`sticky top-0 h-screen flex min-h-screen flex-col bg-gray-900 text-white transition-[width] duration-300 ease-in-out ${
 		expanded ? 'w-40' : 'w-16'
 	}`}
 >
