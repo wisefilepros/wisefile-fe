@@ -1,8 +1,13 @@
 <script>
 	import { auth } from '$lib/stores/auth';
 	import { apiFetch } from '$lib/api/fetchWithBase.js';
-	export let data;
+	import { onMount, onDestroy } from 'svelte';
 
+	export let data;
+	const messages = data?.result ?? [];
+	let currentUser = $auth.user?._id;
+
+	let selectedCaseId = messages[0]?.case_id ?? null;
 	let messageContent = '';
 	let isSending = false;
 	let selectedRecipients = [];
@@ -11,11 +16,6 @@
 	let showCCDropdown = false;
 	let dropdownDirection = 'down';
 	let ccDropdownDirection = 'down';
-	let currentUser = $auth.user?._id;
-
-	const messages = data?.result ?? [];
-
-	let selectedCaseId = messages[0]?.case_id ?? null;
 
 	function getMessagesForCase(caseId) {
 		return messages.filter((msg) => msg.case_id === caseId);
@@ -101,7 +101,8 @@
 			sender_id: currentUser,
 			recipient_ids: allRecipientIds,
 			message_type: 'text',
-			message: messageContent.trim()
+			content: messageContent.trim(),
+			visible_to_users: true
 		};
 
 		try {
@@ -149,35 +150,53 @@
 		}
 	}
 
-	/*
-// Batch mark messages as read
-async function markMessagesAsRead(caseId) {
-  const unreadMessages = getMessagesForCase(caseId).filter(
-    (msg) => !msg.read_by?.includes(currentUser)
-  );
+	// Batch mark messages as read
+	// async function markMessagesAsRead(caseId) {
+	//   const unreadMessages = getMessagesForCase(caseId).filter(
+	//     (msg) => !msg.read_by?.includes(currentUser)
+	//   );
 
-  if (unreadMessages.length === 0) return;
+	//   if (unreadMessages.length === 0) return;
 
-  const message_ids = unreadMessages.map((msg) => msg._id);
+	//   const message_ids = unreadMessages.map((msg) => msg._id);
 
-  try {
-    const res = await apiFetch('/api/messages/mark-read', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message_ids })
-    });
+	//   try {
+	//     const res = await apiFetch('/api/messages/mark-read', {
+	//       method: 'PATCH',
+	//       headers: { 'Content-Type': 'application/json' },
+	//       body: JSON.stringify({ message_ids })
+	//     });
 
-    if (!res.ok) throw new Error('Failed to mark messages as read');
+	//     if (!res.ok) throw new Error('Failed to mark messages as read');
 
-    // Update read_by in local state
-    unreadMessages.forEach((msg) => {
-      msg.read_by = [...(msg.read_by ?? []), currentUser];
-    });
-  } catch (err) {
-    console.error('Failed to mark messages as read:', err);
-  }
-}
-*/
+	//     // Update read_by in local state
+	//     unreadMessages.forEach((msg) => {
+	//       msg.read_by = [...(msg.read_by ?? []), currentUser];
+	//     });
+	//   } catch (err) {
+	//     console.error('Failed to mark messages as read:', err);
+	//   }
+	// }
+
+	// Optional polling for live updates
+	// let pollInterval;
+	//   onMount(() => {
+	//     pollInterval = setInterval(async () => {
+	//       if (!selectedCaseId) return;
+	//       // Backend route needed: GET /api/messages?case_id=xxx
+	//       try {
+	//         const res = await apiFetch(`/api/messages?case_id=${selectedCaseId}`);
+	//         if (!res.ok) return;
+	//         const updated = await res.json();
+	//         // Replace existing messages
+	//         messages.length = 0;
+	//         messages.push(...updated);
+	//       } catch (err) {
+	//         console.warn('Polling failed:', err);
+	//       }
+	//     }, 15000); // ⏱ Adjustable interval (15s is gentle)
+	//   });
+	//   onDestroy(() => clearInterval(pollInterval));
 </script>
 
 <div class="flex h-[calc(100vh-100px)] gap-4">
@@ -189,18 +208,23 @@ async function markMessagesAsRead(caseId) {
 
 		{#each [...new Set(messages.map((m) => m.case_id))] as caseId}
 			<button
-				on:click={() => (selectedCaseId = caseId)}
-				class="flex w-full items-center justify-between border-b px-4 py-3 text-left transition hover:bg-gray-50
-				  {selectedCaseId === caseId ? 'bg-gray-100 font-semibold' : ''}"
+				on:click={() => {
+					selectedCaseId = caseId;
+					markMessagesAsRead(caseId);
+				}}
+				class="flex w-full items-center justify-between border-b px-4 py-3 text-left transition hover:bg-gray-50 {selectedCaseId ===
+				caseId
+					? 'bg-gray-100 font-semibold'
+					: ''}"
 			>
 				<div>
 					<div class="text-sm text-gray-800">Case ID: {caseId.slice(0, 8)}...</div>
-					<div class="text-xs text-gray-500">
-						{messages.find((m) => m.case_id === caseId)?.message}
+					<div class="text-xs italic text-gray-500">
+						{messages.find((m) => m.case_id === caseId)?.content || 'No message yet'}
 					</div>
 				</div>
 
-				{#if messages.some((m) => m.case_id === caseId && !m.is_read)}
+				{#if messages.some((m) => m.case_id === caseId && !m.read_by?.includes(currentUser))}
 					<span class="inline-block h-2 w-2 rounded-full bg-red-500"></span>
 				{/if}
 			</button>
@@ -225,13 +249,13 @@ async function markMessagesAsRead(caseId) {
 
 					<!-- Message Bubble -->
 					<div
-						class={`max-w-[75%] rounded-xl border px-4 py-2 text-sm shadow ${
+						class={`max-w-[75%] whitespace-pre-wrap rounded-xl border px-4 py-2 text-sm shadow ${
 							msg.sender_id === currentUser
 								? 'border-blue-200 bg-blue-100 text-gray-800'
 								: 'border-gray-300 bg-gray-100 text-gray-800'
 						}`}
 					>
-						{msg.message}
+						{msg.content || '[Empty message]'}
 					</div>
 
 					<!-- Timestamp -->
