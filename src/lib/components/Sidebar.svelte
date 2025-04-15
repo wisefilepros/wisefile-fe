@@ -42,7 +42,12 @@
 			icon: 'fa-chart-pie',
 			roles: ['admin', 'client']
 		},
-		{ href: '/app/admin', label: 'Admin Panel', icon: 'fa-user-gear', roles: ['admin'] },
+		{
+			href: '/app/admin',
+			label: 'Admin Panel',
+			icon: 'fa-user-gear',
+			roles: ['admin']
+		},
 		{
 			href: '/app/settings',
 			label: 'Settings',
@@ -56,7 +61,7 @@
 
 <div
 	role="navigation"
-	class={`sticky top-0 h-screen flex min-h-screen flex-col bg-gray-900 text-white transition-[width] duration-300 ease-in-out ${
+	class={`sticky top-0 flex h-screen min-h-screen flex-col bg-gray-900 text-white transition-[width] duration-300 ease-in-out ${
 		expanded ? 'w-40' : 'w-16'
 	}`}
 >
@@ -72,6 +77,7 @@
 					<li>
 						<a
 							href={item.href}
+							data-sveltekit-preload-data="off"
 							class={`flex items-center rounded p-2 text-sm hover:bg-gray-700 ${
 								currentPath.startsWith(item.href) ? 'border-l-4 border-white bg-gray-800' : 'pl-3'
 							}`}
