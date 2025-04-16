@@ -1,21 +1,10 @@
 <script>
-	import { onMount } from 'svelte';
-	import { apiFetch } from '$lib/api/fetchWithBase';
 	import UploadModal from '$lib/components/UploadModal.svelte'; // Create this next
-
-	let documents = [];
+	export let data;
+	
+	let documents = data?.result || [];
 	let searchTerm = '';
 	let showUploadModal = false;
-
-	async function loadDocuments() {
-		try {
-			documents = await apiFetch('/api/documents');
-		} catch (err) {
-			console.error('Failed to fetch documents:', err);
-		}
-	}
-
-	onMount(loadDocuments);
 
 	function filteredDocuments() {
 		const search = searchTerm.toLowerCase();

@@ -64,14 +64,14 @@
 <div class="mb-4 flex flex-wrap items-center gap-4">
 	<input
 		type="text"
-		placeholder="Search all but Month and State..."
+		placeholder="Search invoices..."
 		bind:value={search}
-		class="flex-grow rounded border border-gray-300 px-4 py-2 text-sm shadow-sm"
+		class="flex-grow rounded-md border border-gray-300 bg-white px-4 py-2 shadow-sm focus:border-blue-300 focus:outline-none focus:ring"
 	/>
 
 	<select
 		bind:value={selectedMonth}
-		class="rounded border border-gray-300 px-2 py-2 text-sm text-gray-700 shadow-sm"
+		class="rounded border border-gray-300 bg-white px-2 py-2 text-sm text-gray-700 shadow-sm"
 	>
 		<option value="">All Months</option>
 		{#each months as m}
@@ -81,7 +81,7 @@
 
 	<select
 		bind:value={selectedState}
-		class="rounded border border-gray-300 px-2 py-2 text-sm text-gray-700 shadow-sm"
+		class="rounded border border-gray-300 bg-white px-2 py-2 text-sm text-gray-700 shadow-sm"
 	>
 		<option value="">All States</option>
 		{#each states as s}

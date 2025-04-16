@@ -1,21 +1,13 @@
 <script>
-	import { onMount } from 'svelte';
-	import { apiFetch } from '$lib/api/fetchWithBase';
 	import UploadInvoiceModal from '$lib/components/UploadInvoiceModal.svelte';
 	import { auth } from '$lib/stores/auth';
 
-	let invoices = [];
+	export let data;
+
+	let invoices = data?.result || [];
 	let searchTerm = '';
 	let showUploadModal = false;
 	let selectedStatus = '';
-
-	async function loadInvoices() {
-		try {
-			invoices = await apiFetch('/api/invoices');
-		} catch (err) {
-			console.error('Failed to fetch invoices:', err);
-		}
-	}
 
 	function filteredInvoices() {
 		return invoices.filter((inv) => {
@@ -35,14 +27,12 @@
 			return matchesStatus && matchesSearch;
 		});
 	}
-
-	onMount(loadInvoices);
 </script>
 
 <div class="mb-4 flex items-center gap-4">
 	<input
 		type="text"
-		placeholder="Search documents..."
+		placeholder="Search invoices..."
 		bind:value={searchTerm}
 		class="flex-grow rounded-md border border-gray-300 bg-white px-4 py-2 shadow-sm focus:border-blue-300 focus:outline-none focus:ring"
 	/>
