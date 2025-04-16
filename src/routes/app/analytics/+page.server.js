@@ -7,7 +7,7 @@ export async function load({ cookies }) {
 			? `accessToken=${cookies.get('accessToken')}`
 			: '';
 
-		const result = await apiFetchServer('/api/analytics', {
+		const result = await apiFetchServer('/api/analytics/cases', {
 			cookie: cookieHeader
 		});
 
