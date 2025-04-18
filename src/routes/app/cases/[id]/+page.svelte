@@ -347,7 +347,7 @@
 	</div>
 {:else if activeTab === 'messages'}
 	<div class="flex h-[60vh] flex-col rounded border border-gray-300 bg-white">
-		<div class="border-b bg-gray-600 px-4 py-3 font-bold text-white">Message Thread</div>
+		<div class="border-b px-4 py-3 font-bold bg-gray-700 text-white">Message Thread</div>
 		<div class="flex-1 space-y-4 overflow-y-auto px-6 py-4">
 			{#each messages.filter((msg) => msg.case_id === caseId) as msg}
 				<div
