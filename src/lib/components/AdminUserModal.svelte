@@ -3,7 +3,7 @@
 	import { apiFetch } from '$lib/api/fetchWithBase';
 
 	export let show = false;
-	export let user = null; // if editing
+	export let user = null;
 
 	const dispatch = createEventDispatcher();
 
@@ -11,7 +11,8 @@
 		full_name: '',
 		email: '',
 		phone_number: '',
-		role: 'client'
+		role: '',
+		password: ''
 	};
 
 	let original = {};
@@ -24,11 +25,18 @@
 				full_name: user.full_name,
 				email: user.email,
 				phone_number: user.phone_number,
-				role: user.role
+				role: user.role,
+				password: ''
 			};
 			original = { ...form };
 		} else {
-			form = { full_name: '', email: '', phone_number: '', role: 'client' };
+			form = {
+				full_name: '',
+				email: '',
+				phone_number: '',
+				role: '',
+				password: ''
+			};
 			original = {};
 		}
 	});
@@ -36,7 +44,7 @@
 	function getChangedFields() {
 		const changed = {};
 		for (const key in form) {
-			if (form[key] !== original[key]) {
+			if (key !== 'password' && form[key] !== original[key]) {
 				changed[key] = form[key];
 			}
 		}
@@ -46,25 +54,53 @@
 	async function submit() {
 		isSaving = true;
 		error = '';
+
 		try {
 			if (user) {
 				const updates = getChangedFields();
-				if (Object.keys(updates).length === 0) {
-					close();
-					return;
+
+				// Send PATCH if user fields were updated
+				if (Object.keys(updates).length > 0) {
+					await apiFetch(`/api/users/${user._id}`, {
+						method: 'PATCH',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(updates)
+					});
 				}
-				await apiFetch(`/api/users/${user._id}`, {
-					method: 'PATCH',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(updates)
-				});
+
+				// Send password reset if a new password was entered
+				if (form.password.trim()) {
+					await apiFetch('/api/passwords/reset', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ user_id: user._id, new_password: form.password.trim() })
+					});
+				}
 			} else {
-				await apiFetch('/api/users', {
+				// Create user first
+				const res = await apiFetch('/api/users', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(form)
+					body: JSON.stringify({
+						full_name: form.full_name,
+						email: form.email,
+						phone_number: form.phone_number,
+						role: form.role
+					})
 				});
+
+				const newUser = await res.json();
+
+				// Then set password using new user ID
+				if (form.password.trim()) {
+					await apiFetch('/api/passwords', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ user_id: newUser._id, password: form.password.trim() })
+					});
+				}
 			}
+
 			dispatch('refresh');
 			close();
 		} catch (err) {
@@ -128,11 +164,25 @@
 						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
 						bind:value={form.role}
 					>
+						<option disabled value="">Select role</option>
 						<option value="admin">Admin</option>
 						<option value="client">Client</option>
 						<option value="operations">Operations</option>
 						<option value="attorney">Attorney</option>
 					</select>
+				</div>
+
+				<div>
+					<label for="password" class="block text-sm font-medium text-gray-700"
+						>{user ? 'Temporary Password (optional)' : 'Password'}</label
+					>
+					<input
+						id="password"
+						type="password"
+						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
+						bind:value={form.password}
+						placeholder={user ? 'Leave blank to keep unchanged' : ''}
+					/>
 				</div>
 			</div>
 
@@ -147,7 +197,7 @@
 				<button
 					on:click={submit}
 					class="rounded bg-gray-700 px-4 py-2 text-sm text-white shadow hover:bg-gray-800 disabled:opacity-50"
-					disabled={isSaving}
+					disabled={isSaving || !form.full_name || !form.email || !form.phone_number || !form.role}
 				>
 					{isSaving ? 'Saving...' : 'Save'}
 				</button>
