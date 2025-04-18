@@ -1,15 +1,29 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export async function apiFetch(path, options = {}) {
+	const { method = 'GET', headers = {}, body, ...rest } = options;
+
 	const res = await fetch(`${BASE_URL}${path}`, {
-		...options,
-		credentials: 'include' // send cookies
+		method,
+		headers: {
+			'Content-Type': 'application/json',
+			...headers
+		},
+		body,
+		credentials: 'include',
+		...rest
 	});
 
-	if (!res.ok) {
-		const err = await res.json().catch(() => ({}));
-		throw new Error(err.message || 'Request failed');
+	let data;
+	try {
+		data = await res.json();
+	} catch {
+		data = null;
 	}
 
-	return res.json();
+	if (!res.ok) {
+		throw new Error(data?.message || `Request failed with status ${res.status}`);
+	}
+
+	return data;
 }

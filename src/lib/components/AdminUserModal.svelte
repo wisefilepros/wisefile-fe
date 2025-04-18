@@ -76,7 +76,7 @@
 					});
 				}
 			} else {
-				const res = await apiFetch('/api/users', {
+				const newUser = await apiFetch('/api/users', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
@@ -86,8 +86,6 @@
 						role: form.role
 					})
 				});
-
-				const newUser = await res.json();
 
 				if (form.password.trim()) {
 					await apiFetch('/api/passwords', {
