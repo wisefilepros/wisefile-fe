@@ -13,8 +13,9 @@
 	let editingClient = null;
 
 	export let data;
-	users = data?.users || [];
-	clients = data?.clients || [];
+    console.log(data)
+	users = data?.result.users || [];
+	clients = data?.result.clients || [];
 
 	function openCreate(type) {
 		if (type === 'user') {
