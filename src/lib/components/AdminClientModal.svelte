@@ -1,5 +1,5 @@
 <script>
-	import { createEventDispatcher, onMount } from 'svelte';
+	import { createEventDispatcher, onMount, afterUpdate } from 'svelte';
 	import { apiFetch } from '$lib/api/fetchWithBase';
 
 	export let show = false;
@@ -7,20 +7,25 @@
 
 	const dispatch = createEventDispatcher();
 
+	let initialized = false;
+
 	let form = {
 		display_name: '',
 		legal_name: '',
 		phone_number: '',
 		email: '',
-		mailing_address: {},
-		billing_address: {},
-		physical_address: {},
+		mailing_address: emptyAddress(),
+		billing_address: emptyAddress(),
+		physical_address: emptyAddress(),
 		management_companies: []
 	};
 
 	let original = {};
 	let isSaving = false;
 	let error = '';
+
+	let sameAsMailingForBilling = false;
+	let sameAsMailingForPhysical = false;
 
 	function emptyAddress() {
 		return {
@@ -31,31 +36,37 @@
 		};
 	}
 
-	onMount(() => {
-		if (client) {
-			form = {
-				display_name: client.display_name,
-				legal_name: client.legal_name,
-				phone_number: client.phone_number,
-				email: client.email,
-				mailing_address: client.mailing_address || emptyAddress(),
-				billing_address: client.billing_address || emptyAddress(),
-				physical_address: client.physical_address || emptyAddress(),
-				management_companies: client.management_companies || []
-			};
-			original = structuredClone(form);
-		} else {
-			form = {
-				display_name: '',
-				legal_name: '',
-				phone_number: '',
-				email: '',
-				mailing_address: emptyAddress(),
-				billing_address: emptyAddress(),
-				physical_address: emptyAddress(),
-				management_companies: []
-			};
-			original = {};
+	$: if (sameAsMailingForBilling) form.billing_address = { ...form.mailing_address };
+	$: if (sameAsMailingForPhysical) form.physical_address = { ...form.mailing_address };
+
+	afterUpdate(() => {
+		if (show && !initialized) {
+			if (client) {
+				form = {
+					display_name: client.display_name,
+					legal_name: client.legal_name,
+					phone_number: client.phone_number,
+					email: client.email,
+					mailing_address: client.mailing_address || emptyAddress(),
+					billing_address: client.billing_address || emptyAddress(),
+					physical_address: client.physical_address || emptyAddress(),
+					management_companies: client.management_companies?.map((mc) => ({ ...mc })) || []
+				};
+				original = structuredClone(form);
+			} else {
+				form = {
+					display_name: '',
+					legal_name: '',
+					phone_number: '',
+					email: '',
+					mailing_address: emptyAddress(),
+					billing_address: emptyAddress(),
+					physical_address: emptyAddress(),
+					management_companies: []
+				};
+				original = {};
+			}
+			initialized = true;
 		}
 	});
 
@@ -70,11 +81,16 @@
 	}
 
 	function addManagementCompany() {
-		form.management_companies.push({ name: '', users: [] });
+		form.management_companies = [
+			...form.management_companies.map((mc) => ({ ...mc })),
+			{ name: '', users: [] }
+		];
 	}
 
 	function removeManagementCompany(index) {
-		form.management_companies.splice(index, 1);
+		form.management_companies = form.management_companies
+			.map((mc) => ({ ...mc }))
+			.filter((_, i) => i !== index);
 	}
 
 	async function submit() {
@@ -107,13 +123,17 @@
 	}
 
 	function close() {
+		initialized = false;
 		dispatch('close');
 	}
 </script>
 
 {#if show}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-		<div class="w-full max-w-2xl overflow-y-auto rounded bg-white p-6 shadow-xl">
+		<div
+			class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded bg-white p-6 shadow-xl"
+			autocomplete="off"
+		>
 			<h2 class="mb-4 text-lg font-semibold">{client ? 'Edit' : 'Create'} Client</h2>
 
 			{#if error}
@@ -128,6 +148,7 @@
 					<input
 						id="display_name"
 						type="text"
+						autocomplete="off"
 						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
 						bind:value={form.display_name}
 					/>
@@ -138,6 +159,7 @@
 					<input
 						id="legal_name"
 						type="text"
+						autocomplete="off"
 						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
 						bind:value={form.legal_name}
 					/>
@@ -150,6 +172,7 @@
 					<input
 						id="phone_number"
 						type="text"
+						autocomplete="off"
 						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
 						bind:value={form.phone_number}
 					/>
@@ -160,6 +183,7 @@
 					<input
 						id="email"
 						type="email"
+						autocomplete="off"
 						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
 						bind:value={form.email}
 					/>
@@ -171,6 +195,31 @@
 				{#each ['mailing', 'billing', 'physical'] as type}
 					<fieldset class="rounded border p-4">
 						<legend class="text-xs font-medium uppercase text-gray-500">{type} Address</legend>
+
+						{#if type !== 'mailing'}
+							<label class="mb-2 flex items-center gap-2 text-xs text-gray-600">
+								<input
+									type="checkbox"
+									checked={type === 'billing' ? sameAsMailingForBilling : sameAsMailingForPhysical}
+									on:change={(e) => {
+										if (type === 'billing') {
+											sameAsMailingForBilling = e.target.checked;
+											if (e.target.checked) {
+												form.billing_address = { ...form.mailing_address };
+											}
+										} else {
+											sameAsMailingForPhysical = e.target.checked;
+											if (e.target.checked) {
+												form.physical_address = { ...form.mailing_address };
+											}
+										}
+									}}
+								/>
+
+								Same as mailing address
+							</label>
+						{/if}
+
 						<div class="grid grid-cols-2 gap-4">
 							<input
 								type="text"
@@ -202,7 +251,7 @@
 
 				<h3 class="text-sm font-semibold text-gray-700">Management Companies</h3>
 				<div class="space-y-4">
-					{#each form.management_companies as mc, index}
+					{#each form.management_companies as mc, index (index)}
 						<div class="rounded border border-gray-300 p-4">
 							<label for="company_name" class="block text-xs font-medium text-gray-700"
 								>Company Name</label
@@ -219,10 +268,8 @@
 							<button
 								type="button"
 								class="mt-2 text-xs text-red-500 hover:underline"
-								on:click={() => removeManagementCompany(index)}
+								on:click={() => removeManagementCompany(index)}>Remove</button
 							>
-								Remove
-							</button>
 						</div>
 					{/each}
 					<button
