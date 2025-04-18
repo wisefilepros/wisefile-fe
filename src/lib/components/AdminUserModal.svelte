@@ -1,11 +1,10 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher, afterUpdate } from 'svelte';
 	import { apiFetch } from '$lib/api/fetchWithBase';
 
 	export let show = false;
 	export let user = null;
-
-	let initialized = false;
+	export let clients = [];
 
 	const dispatch = createEventDispatcher();
 
@@ -14,34 +13,36 @@
 		email: '',
 		phone_number: '',
 		role: '',
-		password: ''
+		password: '',
+		client_id: ''
 	};
 
 	let original = {};
 	let isSaving = false;
 	let error = '';
 
-	$: if (show && !initialized) {
-		if (user) {
+	$: if (show) {
+		if (user && user._id !== original?._id) {
 			form = {
 				full_name: user.full_name || '',
 				email: user.email || '',
 				phone_number: user.phone_number || '',
 				role: user.role || '',
-				password: ''
+				password: '',
+				client_id: user.client_id?.toString() || ''
 			};
-			original = { ...form };
-		} else {
+			original = { ...form, _id: user._id };
+		} else if (!user && !original._id) {
 			form = {
 				full_name: '',
 				email: '',
 				phone_number: '',
 				role: '',
-				password: ''
+				password: '',
+				client_id: ''
 			};
 			original = {};
 		}
-		initialized = true;
 	}
 
 	function getChangedFields() {
@@ -62,7 +63,6 @@
 			if (user) {
 				const updates = getChangedFields();
 
-				// PATCH updated user fields
 				if (Object.keys(updates).length > 0) {
 					await apiFetch(`/api/users/${user._id}`, {
 						method: 'PATCH',
@@ -71,19 +71,14 @@
 					});
 				}
 
-				// POST password reset if provided
 				if (form.password.trim()) {
 					await apiFetch('/api/passwords/reset', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({
-							user_id: user._id,
-							new_password: form.password.trim()
-						})
+						body: JSON.stringify({ user_id: user._id, new_password: form.password.trim() })
 					});
 				}
 			} else {
-				// Create user
 				const newUser = await apiFetch('/api/users', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
@@ -91,24 +86,20 @@
 						full_name: form.full_name,
 						email: form.email,
 						phone_number: form.phone_number,
-						role: form.role
+						role: form.role,
+						client_id: form.client_id
 					})
 				});
 
-				// Set password
 				if (form.password.trim()) {
 					await apiFetch('/api/passwords', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({
-							user_id: newUser._id,
-							password: form.password.trim()
-						})
+						body: JSON.stringify({ user_id: newUser._id, password: form.password.trim() })
 					});
 				}
 			}
 
-			// ✅ Trigger parent table refresh
 			dispatch('refresh');
 			close();
 		} catch (err) {
@@ -119,7 +110,6 @@
 	}
 
 	function close() {
-		initialized = false;
 		dispatch('close');
 	}
 </script>
@@ -133,7 +123,7 @@
 				<div class="mb-2 rounded bg-red-100 px-4 py-2 text-sm text-red-700">{error}</div>
 			{/if}
 
-			<form autocomplete="off" on:submit|preventDefault={submit} class="space-y-4">
+			<div class="space-y-4">
 				<div>
 					<label for="full_name" class="block text-sm font-medium text-gray-700">Full Name</label>
 					<input
@@ -186,41 +176,52 @@
 				</div>
 
 				<div>
+					<label for="client_id" class="block text-sm font-medium text-gray-700"
+						>Associated Company</label
+					>
+					<select
+						id="client_id"
+						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
+						bind:value={form.client_id}
+					>
+						<option value="">No Associated Company</option>
+						{#each clients as client}
+							<option value={client._id}>{client.display_name} – ({client.legal_name})</option>
+						{/each}
+					</select>
+				</div>
+
+				<div>
 					<label for="password" class="block text-sm font-medium text-gray-700">
-						{user ? 'Temporary Password (optional)' : 'Create Password'}
+						{user ? 'Temporary Password (optional)' : 'Password'}
 					</label>
 					<input
 						id="password"
 						type="password"
-						autocomplete="new-password"
+						autocomplete="off"
 						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
 						bind:value={form.password}
 						placeholder={user ? 'Leave blank to keep unchanged' : ''}
 					/>
 				</div>
+			</div>
 
-				<div class="flex justify-end gap-2 pt-4">
-					<button
-						on:click={close}
-						type="button"
-						class="rounded bg-gray-200 px-4 py-2 text-sm hover:bg-gray-300"
-					>
-						Cancel
-					</button>
-					<button
-						type="submit"
-						class="rounded bg-gray-700 px-4 py-2 text-sm text-white shadow hover:bg-gray-800 disabled:opacity-50"
-						disabled={isSaving ||
-							!form.full_name ||
-							!form.email ||
-							!form.phone_number ||
-							!form.role ||
-							(!user && !form.password.trim())}
-					>
-						{isSaving ? 'Saving...' : 'Save'}
-					</button>
-				</div>
-			</form>
+			<div class="mt-6 flex justify-end gap-2">
+				<button
+					on:click={close}
+					class="rounded bg-gray-200 px-4 py-2 text-sm hover:bg-gray-300"
+					type="button"
+				>
+					Cancel
+				</button>
+				<button
+					on:click={submit}
+					class="rounded bg-gray-700 px-4 py-2 text-sm text-white shadow hover:bg-gray-800 disabled:opacity-50"
+					disabled={isSaving || !form.full_name || !form.email || !form.phone_number || !form.role}
+				>
+					{isSaving ? 'Saving...' : 'Save'}
+				</button>
+			</div>
 		</div>
 	</div>
 {/if}

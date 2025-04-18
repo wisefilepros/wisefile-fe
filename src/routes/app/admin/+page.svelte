@@ -158,6 +158,7 @@
 	<AdminUserModal
 		show={showUserModal}
 		user={editingUser}
+        clients={clients}
 		on:close={closeModal}
 		on:refresh={() => {
 			fetchUsers();
@@ -168,6 +169,7 @@
 	<AdminClientModal
 		show={showClientModal}
 		client={editingClient}
+        users={users}
 		on:close={closeModal}
 		on:refresh={() => {
 			fetchClients();
