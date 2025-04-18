@@ -44,6 +44,16 @@
 		editingUser = null;
 		editingClient = null;
 	}
+
+	async function fetchUsers() {
+		const res = await apiFetch('/api/users'); // uses credentials automatically
+		users = res;
+	}
+
+	async function fetchClients() {
+		const res = await apiFetch('/api/clients'); // uses credentials automatically
+		clients = res;
+	}
 </script>
 
 <div class="p-6">
@@ -149,13 +159,19 @@
 		show={showUserModal}
 		user={editingUser}
 		on:close={closeModal}
-		on:refresh={closeModal}
+		on:refresh={() => {
+			fetchUsers();
+			closeModal();
+		}}
 	/>
 
 	<AdminClientModal
 		show={showClientModal}
 		client={editingClient}
 		on:close={closeModal}
-		on:refresh={closeModal}
+		on:refresh={() => {
+			fetchClients();
+			closeModal();
+		}}
 	/>
 </div>
