@@ -208,14 +208,15 @@
 					<p class="text-sm text-gray-800">{caseDetails?.start_date || '—'}</p>
 				</div>
 				<div>
+					<p class="text-sm font-semibold">Court Name:</p>
+					<p class="text-sm text-gray-800">{caseDetails?.court_name}</p>
+				</div>
+				<div>
 					<p class="text-sm font-semibold">End Date:</p>
 					<p class="text-sm text-gray-800">{caseDetails?.end_date || '—'}</p>
 				</div>
 
-				<div>
-					<p class="text-sm font-semibold">Court Name:</p>
-					<p class="text-sm text-gray-800">{caseDetails?.court_name}</p>
-				</div>
+				
 				<div>
 					<p class="text-sm font-semibold">Court Case #:</p>
 					{#if isEditingDetails}
