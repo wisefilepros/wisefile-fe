@@ -1,9 +1,11 @@
 <script>
-	import { createEventDispatcher, onMount, afterUpdate } from 'svelte';
+	import { createEventDispatcher } from 'svelte';
 	import { apiFetch } from '$lib/api/fetchWithBase';
 
 	export let show = false;
 	export let user = null;
+
+	let initialized = false;
 
 	const dispatch = createEventDispatcher();
 
@@ -19,27 +21,27 @@
 	let isSaving = false;
 	let error = '';
 
-	// Populate form when user changes and modal is shown
-	$: if (show && user) {
-		form = {
-			full_name: user.full_name || '',
-			email: user.email || '',
-			phone_number: user.phone_number || '',
-			role: user.role || '',
-			password: ''
-		};
-		original = { ...form };
-	}
-
-	$: if (show && !user) {
-		form = {
-			full_name: '',
-			email: '',
-			phone_number: '',
-			role: '',
-			password: ''
-		};
-		original = {};
+	$: if (show && !initialized) {
+		if (user) {
+			form = {
+				full_name: user.full_name || '',
+				email: user.email || '',
+				phone_number: user.phone_number || '',
+				role: user.role || '',
+				password: ''
+			};
+			original = { ...form };
+		} else {
+			form = {
+				full_name: '',
+				email: '',
+				phone_number: '',
+				role: '',
+				password: ''
+			};
+			original = {};
+		}
+		initialized = true;
 	}
 
 	function getChangedFields() {
@@ -60,6 +62,7 @@
 			if (user) {
 				const updates = getChangedFields();
 
+				// PATCH updated user fields
 				if (Object.keys(updates).length > 0) {
 					await apiFetch(`/api/users/${user._id}`, {
 						method: 'PATCH',
@@ -68,14 +71,19 @@
 					});
 				}
 
+				// POST password reset if provided
 				if (form.password.trim()) {
 					await apiFetch('/api/passwords/reset', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ user_id: user._id, new_password: form.password.trim() })
+						body: JSON.stringify({
+							user_id: user._id,
+							new_password: form.password.trim()
+						})
 					});
 				}
 			} else {
+				// Create user
 				const newUser = await apiFetch('/api/users', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
@@ -87,15 +95,20 @@
 					})
 				});
 
+				// Set password
 				if (form.password.trim()) {
 					await apiFetch('/api/passwords', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ user_id: newUser._id, password: form.password.trim() })
+						body: JSON.stringify({
+							user_id: newUser._id,
+							password: form.password.trim()
+						})
 					});
 				}
 			}
 
+			// ✅ Trigger parent table refresh
 			dispatch('refresh');
 			close();
 		} catch (err) {
@@ -106,6 +119,7 @@
 	}
 
 	function close() {
+		initialized = false;
 		dispatch('close');
 	}
 </script>
