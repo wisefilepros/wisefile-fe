@@ -1,4 +1,5 @@
 <script>
+	import CaseCreationModal from '$lib/components/CaseCreationModal.svelte';
 	export let data;
 
 	const cases = data?.result ?? [];
@@ -6,6 +7,10 @@
 	let selectedOperator = '';
 	let selectedAttorney = '';
 	let selectedCourt = '';
+
+	let showModal = false;
+	const openModal = () => (showModal = true);
+	const closeModal = () => (showModal = false);
 
 	const formatDate = (dateStr) => (dateStr ? new Date(dateStr).toLocaleDateString() : '—');
 
@@ -89,7 +94,7 @@
 
 	<!-- New Case Button -->
 	<button
-		class="whitespace-nowrap rounded-md bg-gray-700 px-4 py-2 text-white shadow-sm hover:bg-gray-800"
+		class="whitespace-nowrap rounded-md bg-gray-700 px-4 py-2 text-white shadow-sm hover:bg-gray-800" on:click={openModal}
 	>
 		+ New Case
 	</button>
@@ -132,3 +137,8 @@
 		</table>
 	</div>
 </div>
+
+<!-- Modal for Case Creation -->
+{#if showModal}
+	<CaseCreationModal {showModal} {closeModal} />
+{/if}
