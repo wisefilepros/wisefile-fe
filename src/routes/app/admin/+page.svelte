@@ -13,7 +13,6 @@
 	let editingClient = null;
 
 	export let data;
-    console.log(data)
 	users = data?.result.users || [];
 	clients = data?.result.clients || [];
 

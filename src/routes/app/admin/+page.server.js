@@ -19,7 +19,7 @@ export async function load({ cookies }) {
 			users: usersResult,
 			clients: clientsResult
 		};
-		console.log('Loaded data for /api/users and /api/clients:', result);
+
 		return { result };
 	} catch (error) {
 		console.error('Page load error:', error);
