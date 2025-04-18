@@ -94,7 +94,8 @@
 
 	<!-- New Case Button -->
 	<button
-		class="whitespace-nowrap rounded-md bg-gray-700 px-4 py-2 text-white shadow-sm hover:bg-gray-800" on:click={openModal}
+		class="whitespace-nowrap rounded-md bg-gray-700 px-4 py-2 text-white shadow-sm hover:bg-gray-800"
+		on:click={openModal}
 	>
 		+ New Case
 	</button>
@@ -140,5 +141,5 @@
 
 <!-- Modal for Case Creation -->
 {#if showModal}
-	<CaseCreationModal {showModal} {closeModal} />
+	<CaseCreationModal on:close={closeModal} />
 {/if}
