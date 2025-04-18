@@ -1,5 +1,5 @@
 <script>
-	import { createEventDispatcher, onMount } from 'svelte';
+	import { createEventDispatcher, onMount, afterUpdate } from 'svelte';
 	import { apiFetch } from '$lib/api/fetchWithBase';
 
 	export let show = false;
@@ -19,27 +19,28 @@
 	let isSaving = false;
 	let error = '';
 
-	onMount(() => {
-		if (user) {
-			form = {
-				full_name: user.full_name,
-				email: user.email,
-				phone_number: user.phone_number,
-				role: user.role,
-				password: ''
-			};
-			original = { ...form };
-		} else {
-			form = {
-				full_name: '',
-				email: '',
-				phone_number: '',
-				role: '',
-				password: ''
-			};
-			original = {};
-		}
-	});
+	// Populate form when user changes and modal is shown
+	$: if (show && user) {
+		form = {
+			full_name: user.full_name || '',
+			email: user.email || '',
+			phone_number: user.phone_number || '',
+			role: user.role || '',
+			password: ''
+		};
+		original = { ...form };
+	}
+
+	$: if (show && !user) {
+		form = {
+			full_name: '',
+			email: '',
+			phone_number: '',
+			role: '',
+			password: ''
+		};
+		original = {};
+	}
 
 	function getChangedFields() {
 		const changed = {};
@@ -59,7 +60,6 @@
 			if (user) {
 				const updates = getChangedFields();
 
-				// Send PATCH if user fields were updated
 				if (Object.keys(updates).length > 0) {
 					await apiFetch(`/api/users/${user._id}`, {
 						method: 'PATCH',
@@ -68,7 +68,6 @@
 					});
 				}
 
-				// Send password reset if a new password was entered
 				if (form.password.trim()) {
 					await apiFetch('/api/passwords/reset', {
 						method: 'POST',
@@ -77,7 +76,6 @@
 					});
 				}
 			} else {
-				// Create user first
 				const res = await apiFetch('/api/users', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
@@ -91,7 +89,6 @@
 
 				const newUser = await res.json();
 
-				// Then set password using new user ID
 				if (form.password.trim()) {
 					await apiFetch('/api/passwords', {
 						method: 'POST',
@@ -124,12 +121,13 @@
 				<div class="mb-2 rounded bg-red-100 px-4 py-2 text-sm text-red-700">{error}</div>
 			{/if}
 
-			<div class="space-y-4">
+			<form autocomplete="off" on:submit|preventDefault={submit} class="space-y-4">
 				<div>
 					<label for="full_name" class="block text-sm font-medium text-gray-700">Full Name</label>
 					<input
 						id="full_name"
 						type="text"
+						autocomplete="off"
 						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
 						bind:value={form.full_name}
 					/>
@@ -140,6 +138,7 @@
 					<input
 						id="email"
 						type="email"
+						autocomplete="off"
 						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
 						bind:value={form.email}
 					/>
@@ -152,6 +151,7 @@
 					<input
 						id="phone_number"
 						type="text"
+						autocomplete="off"
 						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
 						bind:value={form.phone_number}
 					/>
@@ -161,6 +161,7 @@
 					<label for="role" class="block text-sm font-medium text-gray-700">Role</label>
 					<select
 						id="role"
+						autocomplete="off"
 						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
 						bind:value={form.role}
 					>
@@ -173,35 +174,41 @@
 				</div>
 
 				<div>
-					<label for="password" class="block text-sm font-medium text-gray-700"
-						>{user ? 'Temporary Password (optional)' : 'Password'}</label
-					>
+					<label for="password" class="block text-sm font-medium text-gray-700">
+						{user ? 'Temporary Password (optional)' : 'Create Password'}
+					</label>
 					<input
 						id="password"
 						type="password"
+						autocomplete="new-password"
 						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
 						bind:value={form.password}
 						placeholder={user ? 'Leave blank to keep unchanged' : ''}
 					/>
 				</div>
-			</div>
 
-			<div class="mt-6 flex justify-end gap-2">
-				<button
-					on:click={close}
-					class="rounded bg-gray-200 px-4 py-2 text-sm hover:bg-gray-300"
-					type="button"
-				>
-					Cancel
-				</button>
-				<button
-					on:click={submit}
-					class="rounded bg-gray-700 px-4 py-2 text-sm text-white shadow hover:bg-gray-800 disabled:opacity-50"
-					disabled={isSaving || !form.full_name || !form.email || !form.phone_number || !form.role}
-				>
-					{isSaving ? 'Saving...' : 'Save'}
-				</button>
-			</div>
+				<div class="flex justify-end gap-2 pt-4">
+					<button
+						on:click={close}
+						type="button"
+						class="rounded bg-gray-200 px-4 py-2 text-sm hover:bg-gray-300"
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						class="rounded bg-gray-700 px-4 py-2 text-sm text-white shadow hover:bg-gray-800 disabled:opacity-50"
+						disabled={isSaving ||
+							!form.full_name ||
+							!form.email ||
+							!form.phone_number ||
+							!form.role ||
+							(!user && !form.password.trim())}
+					>
+						{isSaving ? 'Saving...' : 'Save'}
+					</button>
+				</div>
+			</form>
 		</div>
 	</div>
 {/if}
