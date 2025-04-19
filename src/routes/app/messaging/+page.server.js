@@ -11,9 +11,13 @@ export async function load({ cookies }) {
 			cookie: cookieHeader
 		});
 
+		const users = await apiFetchServer('/api/users', {
+			cookie: cookieHeader
+		});
+
 		console.log('Loaded data for /api/messages:', result);
 
-		return { result };
+		return { result, users };
 	} catch (error) {
 		console.error('Page load error for /api/messages:', error);
 		return { error: error.message };

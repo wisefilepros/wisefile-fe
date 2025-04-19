@@ -16,6 +16,7 @@
 	let showCCDropdown = false;
 	let dropdownDirection = 'down';
 	let ccDropdownDirection = 'down';
+	let isLoadingMessages = false;
 
 	function getMessagesForCase(caseId) {
 		return messages.filter((msg) => msg.case_id === caseId);
@@ -23,16 +24,25 @@
 
 	const formatTime = (timestamp) => new Date(timestamp).toLocaleString();
 
-	const participantOptions = [
-		{ id: 'primary_id', label: 'Primary Contact' },
-		{ id: 'attorney_id', label: 'Attorney' },
-		{ id: 'operator_id', label: 'Operator' }
-	];
+	const participantSet = new Map();
 
-	const ccOptions = [
-		{ id: 'user1', label: 'Support Agent A' },
-		{ id: 'user2', label: 'Support Agent B' }
-	];
+	getMessagesForCase(selectedCaseId).forEach((msg) => {
+		if (msg.sender_id && typeof msg.sender_id === 'object') {
+			participantSet.set(msg.sender_id._id, msg.sender_id);
+		}
+
+		msg.recipient_ids?.forEach((recipient) => {
+			if (recipient && typeof recipient === 'object') {
+				participantSet.set(recipient._id, recipient);
+			}
+		});
+	});
+
+	const participantOptions = Array.from(participantSet.values());
+
+	const ccOptions = data.users.filter(
+		(u) => u.client_id === $auth.user?.client_id && u._id !== currentUser
+	);
 
 	function toggleSelection(list, id) {
 		const idx = list.indexOf(id);
@@ -131,82 +141,79 @@
 		}
 	}
 
-	// Mark individual messages as read when a thread is opened
+	// Batch mark messages as read
 	async function markMessagesAsRead(caseId) {
-		const unreadMessages = messages.filter(
-			(msg) =>
-				msg.case_id === caseId &&
-				msg.recipient_ids.includes(currentUser) &&
-				!msg.read_by?.includes(currentUser)
+		const unreadMessages = getMessagesForCase(caseId).filter(
+			(msg) => !msg.read_by?.includes(currentUser)
 		);
 
 		if (unreadMessages.length === 0) return;
 
+		const message_ids = unreadMessages.map((msg) => msg._id);
+
 		try {
-			await Promise.all(
-				unreadMessages.map(async (msg) => {
-					const updatedReadBy = [...(msg.read_by || []), currentUser];
-					await apiFetch(`/api/messages/${msg._id}`, {
-						method: 'PATCH',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ read_by: updatedReadBy })
-					});
-					msg.read_by = updatedReadBy;
-					messages = [...messages];
-				})
-			);
+			const res = await apiFetch('/api/messages/mark-read', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ messageIds: message_ids })
+			});
+
+			if (!res.ok) throw new Error('Failed to mark messages as read');
+
+			// Update read_by in local state
+			unreadMessages.forEach((msg) => {
+				msg.read_by = [...(msg.read_by ?? []), currentUser];
+			});
 		} catch (err) {
 			console.error('Failed to mark messages as read:', err);
 		}
 	}
 
-	// Batch mark messages as read
-	// async function markMessagesAsRead(caseId) {
-	//   const unreadMessages = getMessagesForCase(caseId).filter(
-	//     (msg) => !msg.read_by?.includes(currentUser)
-	//   );
+	let lastMessageIds = [];
 
-	//   if (unreadMessages.length === 0) return;
+	let pollInterval;
 
-	//   const message_ids = unreadMessages.map((msg) => msg._id);
+	function startPolling() {
+		if (pollInterval) return;
 
-	//   try {
-	//     const res = await apiFetch('/api/messages/mark-read', {
-	//       method: 'PATCH',
-	//       headers: { 'Content-Type': 'application/json' },
-	//       body: JSON.stringify({ message_ids })
-	//     });
+		pollInterval = setInterval(async () => {
+			if (!selectedCaseId || document.visibilityState !== 'visible') return;
 
-	//     if (!res.ok) throw new Error('Failed to mark messages as read');
+			isLoadingMessages = true; // 🔁 Start loading
 
-	//     // Update read_by in local state
-	//     unreadMessages.forEach((msg) => {
-	//       msg.read_by = [...(msg.read_by ?? []), currentUser];
-	//     });
-	//   } catch (err) {
-	//     console.error('Failed to mark messages as read:', err);
-	//   }
-	// }
+			try {
+				const res = await apiFetch(`/api/messages/by-case?case_id=${selectedCaseId}`);
+				if (!res.ok) return;
+				const updated = await res.json();
 
-	// Optional polling for live updates
-	// let pollInterval;
-	//   onMount(() => {
-	//     pollInterval = setInterval(async () => {
-	//       if (!selectedCaseId) return;
-	//       // Backend route needed: GET /api/messages?case_id=xxx
-	//       try {
-	//         const res = await apiFetch(`/api/messages?case_id=${selectedCaseId}`);
-	//         if (!res.ok) return;
-	//         const updated = await res.json();
-	//         // Replace existing messages
-	//         messages.length = 0;
-	//         messages.push(...updated);
-	//       } catch (err) {
-	//         console.warn('Polling failed:', err);
-	//       }
-	//     }, 15000); // ⏱ Adjustable interval (15s is gentle)
-	//   });
-	//   onDestroy(() => clearInterval(pollInterval));
+				const newIds = updated.map((m) => m._id).join(',');
+				const prevIds = lastMessageIds.join(',');
+
+				if (newIds !== prevIds) {
+					messages.length = 0;
+					messages.push(...updated);
+					lastMessageIds = updated.map((m) => m._id);
+
+					await markMessagesAsRead(selectedCaseId);
+				}
+			} catch (err) {
+				console.warn('Polling failed:', err);
+			} finally {
+				isLoadingMessages = false; // ✅ Done loading
+			}
+		}, 15000);
+	}
+
+	onMount(() => {
+		startPolling();
+		document.addEventListener('visibilitychange', startPolling);
+	});
+
+	onDestroy(() => {
+		clearInterval(pollInterval);
+		pollInterval = null;
+		document.removeEventListener('visibilitychange', startPolling);
+	});
 </script>
 
 <div class="flex h-[calc(100vh-100px)] gap-4">
@@ -263,7 +270,9 @@
 					>
 						<!-- Sender Name -->
 						<div class="mb-1 text-xs font-semibold text-gray-500">
-							{msg.sender_id === currentUser ? 'You' : `Sender: ${msg.sender_id.slice(0, 6)}`}
+							{msg.sender_id?._id === currentUser
+								? 'You'
+								: (msg.sender_id?.full_name ?? msg.sender_id?.email ?? '[Unknown]')}
 						</div>
 
 						<!-- Message Bubble -->
@@ -401,7 +410,7 @@
 							<span
 								class="flex items-center gap-1 rounded bg-gray-200 px-2 py-1 text-xs text-gray-700"
 							>
-								<span>{participantOptions.find((p) => p.id === id)?.label ?? id}</span>
+								<span>{participantOptions.find((p) => p._id === id)?.full_name}</span>
 								<button
 									type="button"
 									on:click={() => toggleSelection(selectedRecipients, id)}
@@ -417,7 +426,7 @@
 							<span
 								class="flex items-center gap-1 rounded border border-gray-300 bg-gray-100 px-2 py-1 text-xs text-gray-500"
 							>
-								<span>{ccOptions.find((p) => p.id === id)?.label ?? id} (cc)</span>
+								<span>{ccOptions.find((p) => p._id === id)?.full_name} (cc)</span>
 								<button
 									type="button"
 									on:click={() => toggleSelection(selectedCC, id)}
@@ -437,11 +446,15 @@
 							bind:value={messageContent}
 							placeholder="Type your message..."
 							class="flex-1 rounded border border-gray-300 px-4 py-2 shadow-sm focus:border-blue-300 focus:outline-none focus:ring"
+							disabled={isLoadingMessages || isSending}
 						/>
 						<button
 							type="submit"
 							class="rounded bg-gray-700 px-4 py-2 text-white shadow hover:bg-gray-800 disabled:opacity-50"
-							disabled={!messageContent.trim() || selectedRecipients.length === 0 || isSending}
+							disabled={!messageContent.trim() ||
+								selectedRecipients.length === 0 ||
+								isSending ||
+								isLoadingMessages}
 						>
 							{isSending ? 'Sending...' : 'Send'}
 						</button>
