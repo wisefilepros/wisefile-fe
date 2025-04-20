@@ -14,7 +14,7 @@
 		isLoading = true;
 
 		try {
-			const user = await apiFetch('/api/auth/login', {
+			const user = await apiFetch('/auth/login', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email, password })
