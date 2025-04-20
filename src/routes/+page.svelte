@@ -20,6 +20,8 @@
 				body: JSON.stringify({ email, password })
 			});
 
+			console.log('User logged in:', user);
+
 			auth.set({ isAuthenticated: true, user, role: user.role });
 			goto('/app/dashboard');
 		} catch (err) {
