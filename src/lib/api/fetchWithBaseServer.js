@@ -1,7 +1,5 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 export async function apiFetchServer(path, { cookie = '', ...options } = {}) {
-	const res = await fetch(`${BASE_URL}${path}`, {
+	const res = await fetch(`https://wisefile-be.onrender.com${path}`, {
 		method: options.method || 'GET',
 		headers: {
 			'Content-Type': 'application/json',
