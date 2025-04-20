@@ -559,10 +559,9 @@
 			<div class="mb-4 flex flex-wrap gap-4">
 				<!-- Recipients -->
 				<div class="relative w-1/2">
-					<label class="mb-1 block text-xs font-semibold text-gray-700">Send To</label>
-					<div
-						role="button"
-						tabindex="0"
+					<label for="recipients" class="mb-1 block text-xs font-semibold text-gray-700">Send To</label>
+					<button
+						type="button"
 						class="flex min-h-[42px] w-full cursor-pointer flex-wrap items-center gap-2 rounded border border-gray-300 bg-white px-3 py-2 text-left text-sm shadow-sm"
 						on:click={() => (showRecipientDropdown = !showRecipientDropdown)}
 					>
@@ -571,7 +570,7 @@
 								? 'Select recipient(s)'
 								: `${selectedRecipients.length} selected`}
 						</span>
-					</div>
+					</button>
 
 					{#if showRecipientDropdown}
 						<div
@@ -594,17 +593,21 @@
 
 				<!-- CC -->
 				<div class="relative w-1/2">
-					<label class="mb-1 block text-xs font-semibold text-gray-700">CC</label>
-					<div
-						role="button"
-						tabindex="0"
+					<label for="cc" class="mb-1 block text-xs font-semibold text-gray-700">CC</label>
+					<button
+						type="button"
 						class="flex min-h-[42px] w-full cursor-pointer flex-wrap items-center gap-2 rounded border border-gray-300 bg-white px-3 py-2 text-left text-sm shadow-sm"
 						on:click={() => (showCCDropdown = !showCCDropdown)}
+						on:keydown={(event) => {
+							if (event.key === 'Enter' || event.key === ' ') {
+								showCCDropdown = !showCCDropdown;
+							}
+						}}
 					>
 						<span class="text-gray-400">
 							{selectedCC.length === 0 ? 'Select CC(s)' : `${selectedCC.length} selected`}
 						</span>
-					</div>
+					</button>
 
 					{#if showCCDropdown}
 						<div
@@ -761,7 +764,7 @@
 				<h4 class="mb-2 text-sm font-semibold">Add File Fee</h4>
 				<form class="grid grid-cols-3 gap-4" on:submit={submitFeeForm}>
 					<div class="col-span-1">
-						<label class="block text-sm font-medium text-gray-700">Fee Type</label>
+						<label for="fee-type" class="block text-sm font-medium text-gray-700">Fee Type</label>
 						<input
 							type="text"
 							class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
@@ -770,7 +773,7 @@
 						/>
 					</div>
 					<div class="col-span-1">
-						<label class="block text-sm font-medium text-gray-700">Amount</label>
+						<label for="fee-amount" class="block text-sm font-medium text-gray-700">Amount</label>
 						<input
 							type="number"
 							class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
@@ -781,7 +784,7 @@
 						/>
 					</div>
 					<div class="col-span-1">
-						<label class="block text-sm font-medium text-gray-700">Date</label>
+						<label for="fee-date" class="block text-sm font-medium text-gray-700">Date</label>
 						<input
 							type="date"
 							class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
