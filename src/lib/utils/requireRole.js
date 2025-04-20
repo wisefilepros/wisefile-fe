@@ -1,6 +1,8 @@
 import { redirect } from '@sveltejs/kit';
 import jwt from 'jsonwebtoken';
-import { JWT_SECRET } from '$env/static/private';
+import { env } from '$env/dynamic/private';
+
+const JWT_SECRET = env.JWT_SECRET;
 
 export function requireRole(cookies, requiredRole) {
 	const token = cookies.get('accessToken');
