@@ -50,7 +50,7 @@
 				{capitalizeFirstLetter(log.action)} {capitalizeFirstLetter(log.entity_type)}
 			  </td>
 			  <td class="px-4 py-2">{log.details}</td>
-			  <td class="px-4 py-2">{log.user_id}</td>
+			  <td class="px-4 py-2">{log.user_id.full_name}</td>
 			  <td class="px-4 py-2">{new Date(log.timestamp).toLocaleString()}</td>
 			</tr>
 		  {:else}

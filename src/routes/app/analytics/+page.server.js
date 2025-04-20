@@ -11,8 +11,6 @@ export async function load({ cookies }) {
 			cookie: cookieHeader
 		});
 
-		console.log('Loaded data for /api/analytics:', result);
-
 		return { result };
 	} catch (error) {
 		console.error('Page load error for /api/analytics:', error);

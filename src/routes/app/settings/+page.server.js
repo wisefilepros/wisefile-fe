@@ -13,8 +13,6 @@ export async function load({ cookies }) {
 			cookie: cookieHeader
 		});
 
-		console.log('Loaded data for /api/users/:id (Settings):', result);
-
 		return { user: result };
 	} catch (error) {
 		console.error('Page load error for /api/users/:id (Settings):', error);
