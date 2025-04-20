@@ -6,6 +6,8 @@
 
 	export let data;
 	let { user } = $auth;
+	let selectedCaseId = caseData._id;
+	let messages = data.messages ?? [];
 	let activeTab = 'details';
 	let progressContainer;
 	let isAtStart = true;
@@ -13,7 +15,6 @@
 	let showFeeForm = false;
 	let messageContent = '';
 	let isSending = false;
-	let messages = data?.messages || [];
 	let caseDetails = data?.caseRecord || null;
 	let statuses = data?.caseStatuses || [];
 	let currentUser = data?.me?._id || '';
@@ -22,6 +23,54 @@
 	let editableDetails = {};
 	let originalDetails = {};
 	let newStatus = '';
+	let selectedRecipients = [];
+	let selectedCC = [];
+	let showRecipientDropdown = false;
+	let showCCDropdown = false;
+	let newFee = { type: '', amount: '', date: '' };
+	let fees = data?.case?.fees ?? [];
+	let newNote = '';
+	let isSavingNote = false;
+
+	const participantSet = new Map();
+
+	messages.forEach((msg) => {
+		if (msg.sender_id && typeof msg.sender_id === 'object') {
+			participantSet.set(msg.sender_id._id, msg.sender_id);
+		}
+		msg.recipient_ids?.forEach((r) => {
+			if (r && typeof r === 'object') {
+				participantSet.set(r._id, r);
+			}
+		});
+	});
+
+	const participantOptions = Array.from(participantSet.values());
+
+	// Users from same client (excluding current user)
+	const ccOptions =
+		caseData.client.users
+			?.filter((u) => u._id !== currentUser)
+			.map((u) => ({
+				_id: u._id,
+				full_name: u.full_name
+			})) ?? [];
+
+	function toggleSelection(list, id) {
+		const idx = list.indexOf(id);
+		if (idx !== -1) {
+			list.splice(idx, 1);
+		} else {
+			list.push(id);
+		}
+
+		// Force reactivity
+		if (list === selectedRecipients) {
+			selectedRecipients = [...list];
+		} else if (list === selectedCC) {
+			selectedCC = [...list];
+		}
+	}
 
 	function scrollLeft() {
 		progressContainer.scrollBy({ left: -200, behavior: 'smooth' });
@@ -48,12 +97,14 @@
 		isSending = true;
 
 		try {
+			const allRecipientIds = [...selectedRecipients, ...selectedCC];
+
 			const payload = {
 				case_id: caseId,
 				sender_id: currentUser,
-				recipient_ids: [],
-				content: messageContent.trim(),
+				recipient_ids: allRecipientIds,
 				message_type: 'text',
+				content: messageContent.trim(),
 				visible_to_users: true
 			};
 
@@ -70,6 +121,98 @@
 			alert('Failed to send message.');
 		} finally {
 			isSending = false;
+		}
+	}
+
+	async function submitFeeForm(event) {
+		event.preventDefault();
+
+		if (!newFee.type || !newFee.amount) {
+			alert('Fee type and amount are required.');
+			return;
+		}
+
+		try {
+			const payload = {
+				case_id: caseId,
+				client_id: user.client_id,
+				type: newFee.type,
+				amount: parseFloat(newFee.amount),
+				description: '', // Optionally add description later
+				created_at: newFee.date ? new Date(newFee.date).toISOString() : undefined
+			};
+
+			const res = await apiFetch('/api/fees', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload)
+			});
+
+			fees = [...fees, res]; // Push to local list
+			newFee = { type: '', amount: '', date: '' };
+			showFeeForm = false;
+		} catch (err) {
+			console.error('Fee creation failed:', err);
+			alert('Failed to add fee.');
+		}
+	}
+
+	async function saveInternalNote() {
+		if (!newNote.trim()) return;
+
+		try {
+			isSavingNote = true;
+
+			const payload = {
+				internal_notes: [
+					...(caseDetails.internal_notes ?? []),
+					{
+						note: newNote,
+						user_id: user._id,
+						date: new Date().toISOString()
+					}
+				]
+			};
+
+			const res = await apiFetch(`/api/cases/${caseDetails._id}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload)
+			});
+
+			if (!res.ok) throw new Error('Failed to save note');
+
+			const updated = await res.json();
+			caseDetails.internal_notes = updated.internal_notes;
+			newNote = '';
+		} catch (err) {
+			console.error('Error saving internal note:', err);
+			alert('Could not save note.');
+		} finally {
+			isSavingNote = false;
+		}
+	}
+
+	async function uploadDocument(event) {
+		const file = event.target.files?.[0];
+		if (!file) return;
+
+		const formData = new FormData();
+		formData.append('file', file);
+		formData.append('client_id', user.client_id); // or $auth.user.client_id
+		formData.append('type', 'case'); // optional, categorize as needed
+		formData.append('case_id', caseDetails._id);
+
+		try {
+			const res = await apiFetch('/api/documents', {
+				method: 'POST',
+				body: formData
+			});
+			const uploaded = await res.json();
+			caseDetails.documents.push(uploaded);
+		} catch (err) {
+			console.error('Upload failed:', err);
+			alert('Failed to upload document.');
 		}
 	}
 
@@ -216,7 +359,6 @@
 					<p class="text-sm text-gray-800">{caseDetails?.end_date || '—'}</p>
 				</div>
 
-				
 				<div>
 					<p class="text-sm font-semibold">Court Case #:</p>
 					{#if isEditingDetails}
@@ -251,6 +393,7 @@
 					<p class="text-sm font-semibold">Defendant:</p>
 					<p class="text-sm text-gray-800">{caseDetails?.tenant_id}</p>
 				</div>
+				<!-- Assigned Attorney -->
 				<div>
 					<p class="text-sm font-semibold">Assigned Attorney:</p>
 					{#if isEditingDetails}
@@ -259,13 +402,18 @@
 							bind:value={editableDetails.attorney_id}
 						>
 							<option value="">Select Attorney</option>
-							<!-- populate with real attorney list later -->
+							{#each data?.case?.dropdowns?.attorneys ?? [] as attorney}
+								<option value={attorney._id}>{attorney.full_name}</option>
+							{/each}
 						</select>
 					{:else}
-						<p class="text-sm text-gray-800">{caseDetails?.attorney_id}</p>
+						<p class="text-sm text-gray-800">
+							{caseDetails?.attorney_id?.full_name ?? '—'}
+						</p>
 					{/if}
 				</div>
 
+				<!-- Assigned Operator -->
 				<div>
 					<p class="text-sm font-semibold">Assigned Operator:</p>
 					{#if isEditingDetails}
@@ -274,10 +422,14 @@
 							bind:value={editableDetails.operator_id}
 						>
 							<option value="">Select Operator</option>
-							<!-- populate with real operator list later -->
+							{#each data?.case?.dropdowns?.operators ?? [] as operator}
+								<option value={operator._id}>{operator.full_name}</option>
+							{/each}
 						</select>
 					{:else}
-						<p class="text-sm text-gray-800">{caseDetails?.operator_id}</p>
+						<p class="text-sm text-gray-800">
+							{caseDetails?.operator_id?.full_name ?? '—'}
+						</p>
 					{/if}
 				</div>
 			</div>
@@ -329,6 +481,28 @@
 	<!-- Internal Notes -->
 	<div class="mt-2 rounded border bg-gray-700 p-4 text-white">
 		<h3 class="mb-2 text-sm font-semibold">Internal Notes</h3>
+
+		<!-- Add New Note -->
+		{#if ['admin', 'operations'].includes(user?.role)}
+			<div class="mb-4">
+				<textarea
+					class="w-full rounded border border-gray-400 bg-gray-800 p-2 text-sm text-white"
+					bind:value={newNote}
+					placeholder="Add an internal note..."
+				></textarea>
+				<div class="mt-2 flex justify-end">
+					<button
+						class="rounded bg-white px-3 py-1 text-sm font-semibold text-gray-800 hover:bg-gray-200 disabled:opacity-50"
+						on:click={saveInternalNote}
+						disabled={isSavingNote || !newNote.trim()}
+					>
+						{isSavingNote ? 'Saving...' : 'Save Note'}
+					</button>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Notes Table -->
 		<div class="max-h-[calc(100vh-250px)] overflow-y-auto">
 			<table class="min-w-full divide-y divide-gray-200 text-left text-sm">
 				<thead class="sticky top-0 z-10 bg-gray-700 text-xs font-medium uppercase text-white">
@@ -338,17 +512,29 @@
 						<th class="pb-1">Date</th>
 					</tr>
 				</thead>
-				<tbody class="divide-y divide-gray-200">
-					<tr>
-						<td class="py-1 italic text-gray-300" colspan="3">No notes available.</td>
-					</tr>
+				<tbody class="divide-y divide-gray-300">
+					{#if caseDetails.internal_notes?.length > 0}
+						{#each caseDetails.internal_notes as note}
+							<tr>
+								<td class="py-2">{note.note}</td>
+								<td class="py-2 text-gray-200">{note.user?.full_name || '—'}</td>
+								<td class="py-2 text-gray-400">
+									{new Date(note.date).toLocaleString()}
+								</td>
+							</tr>
+						{/each}
+					{:else}
+						<tr>
+							<td class="py-2 italic text-gray-300" colspan="3">No notes available.</td>
+						</tr>
+					{/if}
 				</tbody>
 			</table>
 		</div>
 	</div>
 {:else if activeTab === 'messages'}
 	<div class="flex h-[60vh] flex-col rounded border border-gray-300 bg-white">
-		<div class="border-b px-4 py-3 font-bold bg-gray-700 text-white">Message Thread</div>
+		<div class="border-b bg-gray-700 px-4 py-3 font-bold text-white">Message Thread</div>
 		<div class="flex-1 space-y-4 overflow-y-auto px-6 py-4">
 			{#each messages.filter((msg) => msg.case_id === caseId) as msg}
 				<div
@@ -369,6 +555,78 @@
 			{/each}
 		</div>
 		<div class="border-t bg-gray-50 px-4 py-3">
+			<!-- Recipient & CC Dropdowns -->
+			<div class="mb-4 flex flex-wrap gap-4">
+				<!-- Recipients -->
+				<div class="relative w-1/2">
+					<label class="mb-1 block text-xs font-semibold text-gray-700">Send To</label>
+					<div
+						role="button"
+						tabindex="0"
+						class="flex min-h-[42px] w-full cursor-pointer flex-wrap items-center gap-2 rounded border border-gray-300 bg-white px-3 py-2 text-left text-sm shadow-sm"
+						on:click={() => (showRecipientDropdown = !showRecipientDropdown)}
+					>
+						<span class="text-gray-400">
+							{selectedRecipients.length === 0
+								? 'Select recipient(s)'
+								: `${selectedRecipients.length} selected`}
+						</span>
+					</div>
+
+					{#if showRecipientDropdown}
+						<div
+							class="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded border border-gray-300 bg-white shadow"
+						>
+							{#each participantOptions as option}
+								<label class="flex cursor-pointer items-center px-3 py-2 text-sm hover:bg-gray-50">
+									<input
+										type="checkbox"
+										checked={selectedRecipients.includes(option._id)}
+										on:change={() => toggleSelection(selectedRecipients, option._id)}
+										class="mr-2"
+									/>
+									{option.full_name}
+								</label>
+							{/each}
+						</div>
+					{/if}
+				</div>
+
+				<!-- CC -->
+				<div class="relative w-1/2">
+					<label class="mb-1 block text-xs font-semibold text-gray-700">CC</label>
+					<div
+						role="button"
+						tabindex="0"
+						class="flex min-h-[42px] w-full cursor-pointer flex-wrap items-center gap-2 rounded border border-gray-300 bg-white px-3 py-2 text-left text-sm shadow-sm"
+						on:click={() => (showCCDropdown = !showCCDropdown)}
+					>
+						<span class="text-gray-400">
+							{selectedCC.length === 0 ? 'Select CC(s)' : `${selectedCC.length} selected`}
+						</span>
+					</div>
+
+					{#if showCCDropdown}
+						<div
+							class="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded border border-gray-300 bg-white shadow"
+						>
+							{#each ccOptions as option}
+								<label class="flex cursor-pointer items-center px-3 py-2 text-sm hover:bg-gray-50">
+									<input
+										type="checkbox"
+										checked={selectedCC.includes(option._id)}
+										on:change={() => toggleSelection(selectedCC, option._id)}
+										class="mr-2"
+									/>
+									{option.full_name}
+								</label>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Message Input -->
 			<form on:submit|preventDefault={sendMessage} class="flex gap-2">
 				<input
 					type="text"
@@ -379,7 +637,7 @@
 				<button
 					type="submit"
 					class="rounded bg-gray-700 px-4 py-2 text-sm text-white shadow hover:bg-gray-800 disabled:opacity-50"
-					disabled={!messageContent.trim() || isSending}
+					disabled={!messageContent.trim() || isSending || selectedRecipients.length === 0}
 				>
 					{isSending ? 'Sending...' : 'Send'}
 				</button>
@@ -392,28 +650,65 @@
 		<!-- Client-Entered Fees (Rent/Fees/Claims) -->
 		<div>
 			<h3 class="mb-2 text-lg font-semibold">Client-Entered Fees</h3>
-			<!-- Replace with dynamic data later -->
-			<table class="min-w-full text-left text-sm">
-				<thead class="bg-gray-100">
-					<tr>
-						<th class="px-4 py-2 font-semibold">Type</th>
-						<th class="px-4 py-2 font-semibold">Amount</th>
-						<th class="px-4 py-2 font-semibold">Description</th>
-					</tr>
-				</thead>
-				<tbody class="divide-y">
-					<tr>
-						<td class="px-4 py-2">Rent</td>
-						<td class="px-4 py-2">$1,000.00</td>
-						<td class="px-4 py-2">April Rent</td>
-					</tr>
-					<tr>
-						<td class="px-4 py-2">Fee</td>
-						<td class="px-4 py-2">$50.00</td>
-						<td class="px-4 py-2">Late Fee</td>
-					</tr>
-				</tbody>
-			</table>
+
+			{#if caseDetails?.rentFeesClaims}
+				<table class="min-w-full text-left text-sm">
+					<thead class="bg-gray-100">
+						<tr>
+							<th class="px-4 py-2 font-semibold">Type</th>
+							<th class="px-4 py-2 font-semibold">Amount</th>
+							<th class="px-4 py-2 font-semibold">Description</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y">
+						{#if caseDetails.rentFeesClaims.baseRent > 0 && caseDetails.rentFeesClaims.monthsUnpaid > 0}
+							<tr>
+								<td class="px-4 py-2">Rent</td>
+								<td class="px-4 py-2">
+									${(
+										caseDetails.rentFeesClaims.baseRent * caseDetails.rentFeesClaims.monthsUnpaid
+									).toFixed(2)}
+								</td>
+								<td class="px-4 py-2">
+									Base Rent x {caseDetails.rentFeesClaims.monthsUnpaid} months
+								</td>
+							</tr>
+						{/if}
+
+						{#if caseDetails.rentFeesClaims.lateFee > 0 && caseDetails.rentFeesClaims.lateMonths > 0}
+							<tr>
+								<td class="px-4 py-2">Late Fees</td>
+								<td class="px-4 py-2">
+									${(
+										caseDetails.rentFeesClaims.lateFee * caseDetails.rentFeesClaims.lateMonths
+									).toFixed(2)}
+								</td>
+								<td class="px-4 py-2">
+									Late Fee x {caseDetails.rentFeesClaims.lateMonths} months
+								</td>
+							</tr>
+						{/if}
+
+						{#if caseDetails.rentFeesClaims.filingFee > 0}
+							<tr>
+								<td class="px-4 py-2">Filing Fee</td>
+								<td class="px-4 py-2">${caseDetails.rentFeesClaims.filingFee.toFixed(2)}</td>
+								<td class="px-4 py-2">One-time court filing fee</td>
+							</tr>
+						{/if}
+
+						{#each caseDetails.rentFeesClaims.miscDebts as debt}
+							<tr>
+								<td class="px-4 py-2">Misc</td>
+								<td class="px-4 py-2">${debt.amount?.toFixed(2)}</td>
+								<td class="px-4 py-2">{debt.description}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			{:else}
+				<p class="text-sm italic text-gray-500">No rent or claim details found for this case.</p>
+			{/if}
 		</div>
 
 		<!-- File Fees Section -->
@@ -429,62 +724,77 @@
 					</button>
 				{/if}
 			</div>
-			<!-- Replace with dynamic data later -->
-			<table class="min-w-full text-left text-sm">
-				<thead class="bg-gray-100">
-					<tr>
-						<th class="px-4 py-2 font-semibold">Type</th>
-						<th class="px-4 py-2 font-semibold">Amount</th>
-						<th class="px-4 py-2 font-semibold">Date</th>
-						<th class="px-4 py-2 font-semibold">Added By</th>
-					</tr>
-				</thead>
-				<tbody class="divide-y">
-					<tr>
-						<td class="px-4 py-2">Court Filing Fee</td>
-						<td class="px-4 py-2">$75.00</td>
-						<td class="px-4 py-2">04/10/2025</td>
-						<td class="px-4 py-2">Admin</td>
-					</tr>
-				</tbody>
-			</table>
+
+			{#if fees.length > 0}
+				<table class="min-w-full text-left text-sm">
+					<thead class="bg-gray-100">
+						<tr>
+							<th class="px-4 py-2 font-semibold">Type</th>
+							<th class="px-4 py-2 font-semibold">Amount</th>
+							<th class="px-4 py-2 font-semibold">Date</th>
+							<th class="px-4 py-2 font-semibold">Added By</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y">
+						{#each fees as fee}
+							<tr>
+								<td class="px-4 py-2">{fee.type}</td>
+								<td class="px-4 py-2">${fee.amount.toFixed(2)}</td>
+								<td class="px-4 py-2">
+									{new Date(fee.created_at).toLocaleDateString()}
+								</td>
+								<td class="px-4 py-2">
+									{fee.created_by?.full_name || '—'}
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			{:else}
+				<p class="text-sm italic text-gray-500">No fees recorded yet.</p>
+			{/if}
 		</div>
 
-		<!-- New Fee Form (Admin/Ops Only) -->
+		<!-- New Fee Form -->
 		{#if showFeeForm && ['admin', 'operations'].includes(user?.role)}
 			<div class="rounded border border-gray-200 bg-gray-50 p-4">
 				<h4 class="mb-2 text-sm font-semibold">Add File Fee</h4>
-				<form class="grid grid-cols-3 gap-4">
+				<form class="grid grid-cols-3 gap-4" on:submit={submitFeeForm}>
 					<div class="col-span-1">
-						<label for="fee-type" class="block text-sm font-medium text-gray-700">Fee Type</label>
+						<label class="block text-sm font-medium text-gray-700">Fee Type</label>
 						<input
 							type="text"
 							class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
+							bind:value={newFee.type}
 							placeholder="e.g. Service Fee"
 						/>
 					</div>
 					<div class="col-span-1">
-						<label for="amount" class="block text-sm font-medium text-gray-700">Amount</label>
+						<label class="block text-sm font-medium text-gray-700">Amount</label>
 						<input
 							type="number"
 							class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
+							bind:value={newFee.amount}
 							placeholder="$"
+							min="0"
+							step="0.01"
 						/>
 					</div>
 					<div class="col-span-1">
-						<label for="date" class="block text-sm font-medium text-gray-700">Date</label>
+						<label class="block text-sm font-medium text-gray-700">Date</label>
 						<input
 							type="date"
-							id="date"
 							class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
+							bind:value={newFee.date}
 						/>
 					</div>
 					<div class="col-span-3 flex justify-end">
 						<button
 							type="submit"
 							class="rounded bg-gray-700 px-4 py-2 text-sm text-white hover:bg-gray-800"
-							>Save Fee</button
 						>
+							Save Fee
+						</button>
 					</div>
 				</form>
 			</div>
@@ -500,7 +810,16 @@
 				placeholder="Search documents..."
 				class="flex-grow rounded-md border border-gray-300 bg-white px-4 py-2 shadow-sm focus:border-blue-300 focus:outline-none focus:ring"
 			/>
+			<!-- Upload Button -->
+			<input
+				id="file-upload"
+				type="file"
+				accept="application/pdf,image/*"
+				on:change={uploadDocument}
+				class="hidden"
+			/>
 			<button
+				on:click={() => document.getElementById('file-upload').click()}
 				class="shrink-0 rounded bg-gray-700 px-4 py-2 text-sm text-white shadow hover:bg-gray-800"
 			>
 				Upload Document
@@ -518,20 +837,25 @@
 				</tr>
 			</thead>
 			<tbody class="divide-y divide-gray-200">
-				<tr>
-					<td class="px-4 py-2">Lease Agreement</td>
-					<td class="px-4 py-2">PDF</td>
-					<td class="px-4 py-2">Lease signed by tenant</td>
-					<td class="px-4 py-2">Jane Smith</td>
-					<td class="px-4 py-2">04/10/2025</td>
-				</tr>
-				<tr>
-					<td class="px-4 py-2">Invoice #123</td>
-					<td class="px-4 py-2">Invoice</td>
-					<td class="px-4 py-2">Legal filing fee</td>
-					<td class="px-4 py-2">John Doe</td>
-					<td class="px-4 py-2">04/12/2025</td>
-				</tr>
+				{#each caseDetails.documents as doc}
+					<tr>
+						<td class="px-4 py-2">
+							<a href={doc.file_url} target="_blank" class="text-blue-600 hover:underline">
+								{doc.name || 'Unnamed File'}
+							</a>
+						</td>
+						<td class="px-4 py-2">{doc.file_type || '—'}</td>
+						<td class="px-4 py-2">{doc.description || '—'}</td>
+						<td class="px-4 py-2">{doc.uploaded_by?.full_name || '—'}</td>
+						<td class="px-4 py-2">
+							{new Date(doc.uploaded_at).toLocaleDateString(undefined, {
+								month: 'short',
+								day: 'numeric',
+								year: 'numeric'
+							})}
+						</td>
+					</tr>
+				{/each}
 			</tbody>
 		</table>
 	</div>

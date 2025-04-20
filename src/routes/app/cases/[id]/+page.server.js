@@ -9,53 +9,25 @@ export async function load({ cookies, params }) {
 
 		const caseId = params.id;
 
-		// Fetch case record
+		// Fetch populated case record (includes client, users, tenants, etc.)
 		const caseRecord = await apiFetchServer(`/api/cases/${caseId}`, {
 			cookie: cookieHeader
 		});
 
+		// Case status options for status dropdown
 		const caseStatuses = await apiFetchServer(`/api/utils/case-status-options`, {
 			cookie: cookieHeader
 		});
 
-		// // Fetch related activity log
-		// const activityLog = await apiFetchServer(`/api/activity?case_id=${caseId}`, {
-		// 	cookie: cookieHeader
-		// });
-
-		// // Fetch messages
-		// const messages = await apiFetchServer(`/api/messages?case_id=${caseId}`, {
-		// 	cookie: cookieHeader
-		// });
-
-		// // Fetch documents
-		// const documents = await apiFetchServer(`/api/documents?case_id=${caseId}`, {
-		// 	cookie: cookieHeader
-		// });
-
-		// // Fetch invoices
-		// const invoices = await apiFetchServer(`/api/invoices?case_id=${caseId}`, {
-		// 	cookie: cookieHeader
-		// });
-
-		// // Fetch all users for assigning roles (admin only logic in UI)
-		// const users = await apiFetchServer(`/api/users`, {
-		// 	cookie: cookieHeader
-		// });
-
-		// // Fetch all attorneys (filter client-attached users with role 'attorney')
-		// const attorneys = users.filter((u) => u.role === 'attorney');
-		// const operators = users.filter((u) => u.role === 'operations');
+		// Messages for this case only
+		const messages = await apiFetchServer(`/api/messages/by-case?case_id=${caseId}`, {
+			cookie: cookieHeader
+		});
 
 		return {
 			caseRecord,
-			caseStatuses
-			// activityLog,
-			// messages,
-			// documents,
-			// invoices,
-			// attorneys,
-			// operators
+			caseStatuses,
+			messages
 		};
 	} catch (error) {
 		console.error('Case Details load error:', error);
