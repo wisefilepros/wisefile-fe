@@ -1,13 +1,11 @@
 <script>
-	import { createEventDispatcher, onMount, afterUpdate } from 'svelte';
+	import { createEventDispatcher } from 'svelte';
 	import { apiFetch } from '$lib/api/fetchWithBase';
 
 	export let show = false;
 	export let client = null;
 
 	const dispatch = createEventDispatcher();
-
-	let initialized = false;
 
 	let form = {
 		display_name: '',
@@ -20,12 +18,10 @@
 		management_companies: []
 	};
 
-	let original = {};
-	let isSaving = false;
-	let error = '';
-
 	let sameAsMailingForBilling = false;
 	let sameAsMailingForPhysical = false;
+	let isSaving = false;
+	let error = '';
 
 	function emptyAddress() {
 		return {
@@ -36,44 +32,49 @@
 		};
 	}
 
-	$: if (sameAsMailingForBilling) form.billing_address = { ...form.mailing_address };
-	$: if (sameAsMailingForPhysical) form.physical_address = { ...form.mailing_address };
+	// Keep address copies in sync
+	$: if (sameAsMailingForBilling) {
+		form.billing_address = { ...form.mailing_address };
+	}
+	$: if (sameAsMailingForPhysical) {
+		form.physical_address = { ...form.mailing_address };
+	}
 
-	afterUpdate(() => {
-		if (show && !initialized) {
-			if (client) {
-				form = {
-					display_name: client.display_name,
-					legal_name: client.legal_name,
-					phone_number: client.phone_number,
-					email: client.email,
-					mailing_address: client.mailing_address || emptyAddress(),
-					billing_address: client.billing_address || emptyAddress(),
-					physical_address: client.physical_address || emptyAddress(),
-					management_companies: client.management_companies?.map((mc) => ({ ...mc })) || []
-				};
-				original = structuredClone(form);
-			} else {
-				form = {
-					display_name: '',
-					legal_name: '',
-					phone_number: '',
-					email: '',
-					mailing_address: emptyAddress(),
-					billing_address: emptyAddress(),
-					physical_address: emptyAddress(),
-					management_companies: []
-				};
-				original = {};
-			}
-			initialized = true;
+	// Reset form on modal open
+	$: if (show) {
+		if (client) {
+			form = {
+				display_name: client.display_name,
+				legal_name: client.legal_name,
+				phone_number: client.phone_number,
+				email: client.email,
+				mailing_address: client.mailing_address || emptyAddress(),
+				billing_address: client.billing_address || emptyAddress(),
+				physical_address: client.physical_address || emptyAddress(),
+				management_companies: client.management_companies?.map((mc) => ({ ...mc })) || []
+			};
+		} else {
+			form = {
+				display_name: '',
+				legal_name: '',
+				phone_number: '',
+				email: '',
+				mailing_address: emptyAddress(),
+				billing_address: emptyAddress(),
+				physical_address: emptyAddress(),
+				management_companies: []
+			};
 		}
-	});
+
+		error = '';
+		sameAsMailingForBilling = false;
+		sameAsMailingForPhysical = false;
+	}
 
 	function getChangedFields() {
 		const changed = {};
 		for (const key in form) {
-			if (JSON.stringify(form[key]) !== JSON.stringify(original[key])) {
+			if (JSON.stringify(form[key]) !== JSON.stringify(client?.[key])) {
 				changed[key] = form[key];
 			}
 		}
@@ -96,6 +97,7 @@
 	async function submit() {
 		isSaving = true;
 		error = '';
+
 		try {
 			if (client) {
 				const updates = getChangedFields();
@@ -113,8 +115,9 @@
 					body: JSON.stringify(form)
 				});
 			}
+
 			dispatch('refresh');
-			close();
+			dispatch('close');
 		} catch (err) {
 			error = err.message || 'Failed to save client';
 		} finally {
@@ -123,17 +126,13 @@
 	}
 
 	function close() {
-		initialized = false;
 		dispatch('close');
 	}
 </script>
 
 {#if show}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-		<div
-			class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded bg-white p-6 shadow-xl"
-			autocomplete="off"
-		>
+		<div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded bg-white p-6 shadow-xl">
 			<h2 class="mb-4 text-lg font-semibold">{client ? 'Edit' : 'Create'} Client</h2>
 
 			{#if error}
@@ -215,7 +214,6 @@
 										}
 									}}
 								/>
-
 								Same as mailing address
 							</label>
 						{/if}
@@ -268,8 +266,10 @@
 							<button
 								type="button"
 								class="mt-2 text-xs text-red-500 hover:underline"
-								on:click={() => removeManagementCompany(index)}>Remove</button
+								on:click={() => removeManagementCompany(index)}
 							>
+								Remove
+							</button>
 						</div>
 					{/each}
 					<button
@@ -285,13 +285,14 @@
 			<div class="mt-6 flex justify-end gap-2">
 				<button
 					on:click={close}
-					class="rounded bg-gray-200 px-4 py-2 text-sm hover:bg-gray-300"
 					type="button"
+					class="rounded bg-gray-200 px-4 py-2 text-sm hover:bg-gray-300"
 				>
 					Cancel
 				</button>
 				<button
 					on:click={submit}
+					type="button"
 					class="rounded bg-gray-700 px-4 py-2 text-sm text-white shadow hover:bg-gray-800 disabled:opacity-50"
 					disabled={isSaving ||
 						!form.display_name ||

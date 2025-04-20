@@ -1,5 +1,5 @@
 <script>
-	import { createEventDispatcher, afterUpdate } from 'svelte';
+	import { createEventDispatcher } from 'svelte';
 	import { apiFetch } from '$lib/api/fetchWithBase';
 
 	export let show = false;
@@ -8,51 +8,33 @@
 
 	const dispatch = createEventDispatcher();
 
-	let form = {
-		full_name: '',
-		email: '',
-		phone_number: '',
-		role: '',
-		password: '',
-		client_id: ''
-	};
-
-	let original = {};
 	let isSaving = false;
 	let error = '';
 
-	$: if (show) {
-		if (user && user._id !== original?._id) {
-			form = {
-				full_name: user.full_name || '',
-				email: user.email || '',
-				phone_number: user.phone_number || '',
-				role: user.role || '',
-				password: '',
-				client_id: user.client_id?.toString() || ''
-			};
-			original = { ...form, _id: user._id };
-		} else if (!user && !original._id) {
-			form = {
-				full_name: '',
-				email: '',
-				phone_number: '',
-				role: '',
-				password: '',
-				client_id: ''
-			};
-			original = {};
-		}
-	}
+	let full_name = '';
+	let email = '';
+	let phone_number = '';
+	let role = '';
+	let password = '';
+	let client_id = '';
 
-	function getChangedFields() {
-		const changed = {};
-		for (const key in form) {
-			if (key !== 'password' && form[key] !== original[key]) {
-				changed[key] = form[key];
-			}
+	// Reset fields on open
+	$: if (show) {
+		if (user) {
+			full_name = user.full_name || '';
+			email = user.email || '';
+			phone_number = user.phone_number || '';
+			role = user.role || '';
+			client_id = user.client_id?.toString() || '';
+			password = '';
+		} else {
+			full_name = '';
+			email = '';
+			phone_number = '';
+			role = '';
+			client_id = '';
+			password = '';
 		}
-		return changed;
 	}
 
 	async function submit() {
@@ -61,47 +43,45 @@
 
 		try {
 			if (user) {
-				const updates = getChangedFields();
+				const updates = {
+					full_name,
+					email,
+					phone_number,
+					role,
+					client_id
+				};
 
-				if (Object.keys(updates).length > 0) {
-					await apiFetch(`/api/users/${user._id}`, {
-						method: 'PATCH',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify(updates)
-					});
-				}
+				await apiFetch(`/api/users/${user._id}`, {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(updates)
+				});
 
-				if (form.password.trim()) {
+				if (password.trim()) {
 					await apiFetch('/api/passwords/reset', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ user_id: user._id, new_password: form.password.trim() })
+						body: JSON.stringify({ user_id: user._id, new_password: password.trim() })
 					});
 				}
 			} else {
 				const newUser = await apiFetch('/api/users', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						full_name: form.full_name,
-						email: form.email,
-						phone_number: form.phone_number,
-						role: form.role,
-						client_id: form.client_id
-					})
+					body: JSON.stringify({ full_name, email, phone_number, role, client_id })
 				});
 
-				if (form.password.trim()) {
+				if (password.trim()) {
 					await apiFetch('/api/passwords', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ user_id: newUser._id, password: form.password.trim() })
+						body: JSON.stringify({ user_id: newUser._id, password: password.trim() })
 					});
 				}
 			}
 
 			dispatch('refresh');
-			close();
+			dispatch('close');
 		} catch (err) {
 			error = err.message || 'Failed to save user';
 		} finally {
@@ -115,6 +95,12 @@
 </script>
 
 {#if show}
+	<!-- Hidden form to block browser autofill -->
+	<form style="display: none;">
+		<input type="text" name="username" autocomplete="username" />
+		<input type="password" name="password" autocomplete="current-password" />
+	</form>
+
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
 		<div class="w-full max-w-lg rounded bg-white p-6 shadow-xl">
 			<h2 class="mb-4 text-lg font-semibold">{user ? 'Edit' : 'Create'} User</h2>
@@ -123,105 +109,116 @@
 				<div class="mb-2 rounded bg-red-100 px-4 py-2 text-sm text-red-700">{error}</div>
 			{/if}
 
-			<div class="space-y-4">
-				<div>
-					<label for="full_name" class="block text-sm font-medium text-gray-700">Full Name</label>
-					<input
-						id="full_name"
-						type="text"
-						autocomplete="off"
-						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
-						bind:value={form.full_name}
-					/>
+			<form autocomplete="off" on:submit|preventDefault={submit}>
+				<div class="space-y-4">
+					<div>
+						<label for="new_full_name" class="block text-sm font-medium text-gray-700">Full Name</label>
+						<input
+							type="text"
+							name="new_full_name"
+							autocomplete="off"
+							class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
+							bind:value={full_name}
+						/>
+					</div>
+
+					<div>
+						<label for="new_email" class="block text-sm font-medium text-gray-700">Email</label>
+						<input
+							type="email"
+							name="new_email"
+							autocomplete="off"
+							class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
+							bind:value={email}
+						/>
+					</div>
+
+					<div>
+						<label for="new_phone" class="block text-sm font-medium text-gray-700">Phone Number</label>
+						<input
+							type="text"
+							name="new_phone"
+							autocomplete="off"
+							class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
+							bind:value={phone_number}
+						/>
+					</div>
+
+					<div>
+						<label for="new_role" class="block text-sm font-medium text-gray-700">Role</label>
+						<select
+							name="new_role"
+							class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
+							bind:value={role}
+						>
+							<option disabled value="">Select role</option>
+							<option value="admin">Admin</option>
+							<option value="client">Client</option>
+							<option value="operations">Operations</option>
+							<option value="attorney">Attorney</option>
+						</select>
+					</div>
+
+					<div>
+						<label for="new_client_id" class="block text-sm font-medium text-gray-700">Associated Company</label>
+						<select
+							class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
+							bind:value={client_id}
+						>
+							<option value="">No Associated Company</option>
+							{#each clients as client}
+								<option value={client._id}>{client.display_name} – ({client.legal_name})</option>
+							{/each}
+						</select>
+					</div>
+
+					<div>
+						<label for="new_client_id" class="block text-sm font-medium text-gray-700">
+							Associated Company
+						</label>
+						<select
+							class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
+							bind:value={client_id}
+						>
+							<option value="">No Associated Company</option>
+							{#each clients as client}
+								<option value={client._id}>{client.display_name} – ({client.legal_name})</option>
+							{/each}
+						</select>
+					</div>
+
+					<div>
+						<label for="new_password" class="block text-sm font-medium text-gray-700">
+							{user ? 'Temporary Password (optional)' : 'Password'}
+						</label>
+						<input
+							type="password"
+							name="new_password"
+							autocomplete="new-password"
+							class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
+							bind:value={password}
+							placeholder={user ? 'Leave blank to keep unchanged' : ''}
+						/>
+					</div>
 				</div>
 
-				<div>
-					<label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-					<input
-						id="email"
-						type="email"
-						autocomplete="off"
-						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
-						bind:value={form.email}
-					/>
-				</div>
-
-				<div>
-					<label for="phone_number" class="block text-sm font-medium text-gray-700"
-						>Phone Number</label
+				<div class="mt-6 flex justify-end gap-2">
+					<button
+						on:click={close}
+						class="rounded bg-gray-200 px-4 py-2 text-sm hover:bg-gray-300"
+						type="button"
 					>
-					<input
-						id="phone_number"
-						type="text"
-						autocomplete="off"
-						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
-						bind:value={form.phone_number}
-					/>
-				</div>
-
-				<div>
-					<label for="role" class="block text-sm font-medium text-gray-700">Role</label>
-					<select
-						id="role"
-						autocomplete="off"
-						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
-						bind:value={form.role}
+						Cancel
+					</button>
+					<button
+						type="submit"
+						class="rounded bg-gray-700 px-4 py-2 text-sm text-white shadow hover:bg-gray-800 disabled:opacity-50"
+						disabled={isSaving || !full_name || !email || !role}
 					>
-						<option disabled value="">Select role</option>
-						<option value="admin">Admin</option>
-						<option value="client">Client</option>
-						<option value="operations">Operations</option>
-						<option value="attorney">Attorney</option>
-					</select>
+						{isSaving ? 'Saving...' : 'Save'}
+					</button>
 				</div>
-
-				<div>
-					<label for="client_id" class="block text-sm font-medium text-gray-700"
-						>Associated Company</label
-					>
-					<select
-						id="client_id"
-						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
-						bind:value={form.client_id}
-					>
-						<option value="">No Associated Company</option>
-						{#each clients as client}
-							<option value={client._id}>{client.display_name} – ({client.legal_name})</option>
-						{/each}
-					</select>
-				</div>
-
-				<div>
-					<label for="password" class="block text-sm font-medium text-gray-700">
-						{user ? 'Temporary Password (optional)' : 'Password'}
-					</label>
-					<input
-						id="password"
-						type="password"
-						autocomplete="off"
-						class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
-						bind:value={form.password}
-						placeholder={user ? 'Leave blank to keep unchanged' : ''}
-					/>
-				</div>
-			</div>
-
-			<div class="mt-6 flex justify-end gap-2">
-				<button
-					on:click={close}
-					class="rounded bg-gray-200 px-4 py-2 text-sm hover:bg-gray-300"
-					type="button"
-				>
-					Cancel
-				</button>
-				<button
-					on:click={submit}
-					class="rounded bg-gray-700 px-4 py-2 text-sm text-white shadow hover:bg-gray-800 disabled:opacity-50"
-					disabled={isSaving || !form.full_name || !form.email || !form.phone_number || !form.role}
-				>
-					{isSaving ? 'Saving...' : 'Save'}
-				</button>
-			</div>
+			</form>
 		</div>
 	</div>
 {/if}
