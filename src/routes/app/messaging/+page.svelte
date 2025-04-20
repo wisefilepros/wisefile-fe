@@ -115,7 +115,7 @@
 		};
 
 		try {
-			const newMessage = await apiFetch('/api/messages', {
+			const newMessage = await apiFetch('/messages', {
 				method: 'POST',
 				body: JSON.stringify(payload),
 				headers: {
@@ -152,7 +152,7 @@
 		const message_ids = unreadMessages.map((msg) => msg._id);
 
 		try {
-			const res = await apiFetch('/api/messages/mark-read', {
+			const res = await apiFetch('/messages/mark-read', {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ messageIds: message_ids })
@@ -182,7 +182,7 @@
 			isLoadingMessages = true; // 🔁 Start loading
 
 			try {
-				const res = await apiFetch(`/api/messages/by-case?case_id=${selectedCaseId}`);
+				const res = await apiFetch(`/messages/by-case?case_id=${selectedCaseId}`);
 				if (!res.ok) return;
 				const updated = await res.json();
 

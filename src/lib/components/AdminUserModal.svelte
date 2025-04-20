@@ -60,7 +60,7 @@
 				const updates = getChangedFields();
 
 				if (Object.keys(updates).length > 0) {
-					await apiFetch(`/api/users/${user._id}`, {
+					await apiFetch(`/users/${user._id}`, {
 						method: 'PATCH',
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify(updates)
@@ -68,14 +68,14 @@
 				}
 
 				if (password.trim()) {
-					await apiFetch('/api/passwords/reset', {
+					await apiFetch('/passwords/reset', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify({ user_id: user._id, new_password: password.trim() })
 					});
 				}
 			} else {
-				const newUser = await apiFetch('/api/users', {
+				const newUser = await apiFetch('/users', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ full_name, email, phone_number, role, client_id })
@@ -83,7 +83,7 @@
 
 				console.log(newUser);
 				if (password.trim()) {
-					await apiFetch('/api/passwords', {
+					await apiFetch('/passwords', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify({ user_id: newUser.id, password: password.trim() })

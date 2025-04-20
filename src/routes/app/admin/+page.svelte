@@ -46,12 +46,12 @@
 	}
 
 	async function fetchUsers() {
-		const res = await apiFetch('/api/users'); // uses credentials automatically
+		const res = await apiFetch('/users'); // uses credentials automatically
 		users = res;
 	}
 
 	async function fetchClients() {
-		const res = await apiFetch('/api/clients'); // uses credentials automatically
+		const res = await apiFetch('/clients'); // uses credentials automatically
 		clients = res;
 	}
 </script>

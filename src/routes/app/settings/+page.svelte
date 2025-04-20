@@ -48,7 +48,7 @@
 			const updates = getChangedFields();
 
 			if (Object.keys(updates).length > 0) {
-				await apiFetch(`/api/users/${user._id}`, {
+				await apiFetch(`/users/${user._id}`, {
 					method: 'PATCH',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify(updates)
@@ -58,7 +58,7 @@
 			}
 
 			if (form.new_password.trim() && form.current_password.trim()) {
-				await apiFetch('/api/passwords/update', {
+				await apiFetch('/passwords/update', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({

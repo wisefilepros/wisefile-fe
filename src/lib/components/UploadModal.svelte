@@ -36,7 +36,7 @@
 		formData.append('is_temporary', is_temporary.toString());
 
 		try {
-			await apiFetch('/api/documents', {
+			await apiFetch('/documents', {
 				method: 'POST',
 				body: formData
 			});

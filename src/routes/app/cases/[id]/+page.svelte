@@ -108,7 +108,7 @@
 				visible_to_users: true
 			};
 
-			const newMessage = await apiFetch('/api/messages', {
+			const newMessage = await apiFetch('/messages', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(payload)
@@ -142,7 +142,7 @@
 				created_at: newFee.date ? new Date(newFee.date).toISOString() : undefined
 			};
 
-			const res = await apiFetch('/api/fees', {
+			const res = await apiFetch('/fees', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(payload)
@@ -174,7 +174,7 @@
 				]
 			};
 
-			const res = await apiFetch(`/api/cases/${caseDetails._id}`, {
+			const res = await apiFetch(`/cases/${caseDetails._id}`, {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(payload)
@@ -204,7 +204,7 @@
 		formData.append('case_id', caseDetails._id);
 
 		try {
-			const res = await apiFetch('/api/documents', {
+			const res = await apiFetch('/documents', {
 				method: 'POST',
 				body: formData
 			});
@@ -229,7 +229,7 @@
 
 	async function saveStatus() {
 		if (!newStatus || newStatus === caseDetails.status) return;
-		await apiFetch(`/api/cases/${caseDetails._id}`, {
+		await apiFetch(`/cases/${caseDetails._id}`, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ status: newStatus })
@@ -239,7 +239,7 @@
 	}
 
 	async function saveCaseDetails() {
-		await apiFetch(`/api/cases/${caseDetails._id}`, {
+		await apiFetch(`/cases/${caseDetails._id}`, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({

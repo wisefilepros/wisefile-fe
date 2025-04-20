@@ -21,7 +21,7 @@
 
 	async function fetchClients() {
 		try {
-			clients = await apiFetch('/api/clients');
+			clients = await apiFetch('/clients');
 		} catch (err) {
 			console.error('Failed to fetch clients', err);
 		}
@@ -30,7 +30,7 @@
 	async function fetchCases() {
 		if (!selectedClientId) return;
 		try {
-			cases = await apiFetch(`/api/cases?client_id=${selectedClientId}`);
+			cases = await apiFetch(`/cases?client_id=${selectedClientId}`);
 		} catch (err) {
 			console.error('Failed to fetch cases', err);
 		}
@@ -39,7 +39,7 @@
 	async function fetchFees() {
 		if (!selectedCaseId) return;
 		try {
-			fees = await apiFetch(`/api/fees?case_id=${selectedCaseId}`);
+			fees = await apiFetch(`/fees?case_id=${selectedCaseId}`);
 		} catch (err) {
 			console.error('Failed to fetch fees', err);
 		}

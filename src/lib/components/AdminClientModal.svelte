@@ -102,14 +102,14 @@
 			if (client) {
 				const updates = getChangedFields();
 				if (Object.keys(updates).length > 0) {
-					await apiFetch(`/api/clients/${client._id}`, {
+					await apiFetch(`/clients/${client._id}`, {
 						method: 'PATCH',
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify(updates)
 					});
 				}
 			} else {
-				await apiFetch('/api/clients', {
+				await apiFetch('/clients', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify(form)

@@ -81,10 +81,10 @@
 	async function loadData() {
 		try {
 			const [clientRes, propRes, userRes, tenantRes] = await Promise.all([
-				apiFetch(`/api/clients/${user.clientId}`),
-				apiFetch(`/api/properties?clientId=${user.clientId}`),
-				apiFetch(`/api/users?clientId=${user.clientId}`),
-				apiFetch(`/api/tenants?clientId=${user.clientId}`)
+				apiFetch(`/clients/${user.clientId}`),
+				apiFetch(`/properties?clientId=${user.clientId}`),
+				apiFetch(`/users?clientId=${user.clientId}`),
+				apiFetch(`/tenants?clientId=${user.clientId}`)
 			]);
 
 			if (!clientRes.ok || !propRes.ok || !userRes.ok || !tenantRes.ok) {
@@ -174,7 +174,7 @@
 				is_active: true
 			};
 
-			const result = await apiFetch('/api/properties', {
+			const result = await apiFetch('/properties', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(payload)
@@ -202,7 +202,7 @@
 				associated_properties: [caseDetails.property_id]
 			};
 
-			const result = await apiFetch('/api/tenants', {
+			const result = await apiFetch('/tenants', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(payload)
@@ -253,7 +253,7 @@
 			formData.append('is_temporary', false);
 
 			try {
-				const res = await apiFetch('/api/documents', {
+				const res = await apiFetch('/documents', {
 					method: 'POST',
 					body: formData
 				});
@@ -261,7 +261,7 @@
 				const uploaded = await res.json();
 
 				// Link to the case
-				await apiFetch('/api/documents/link-to-case', {
+				await apiFetch('/documents/link-to-case', {
 					method: 'PATCH',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
@@ -290,9 +290,9 @@
 
 		if (createdTenant?._id) {
 			caseDetails.tenants = [...caseDetails.tenants, createdTenant];
-			const property = await apiFetch(`/api/properties/${caseDetails.property_id}`);
+			const property = await apiFetch(`/properties/${caseDetails.property_id}`);
 
-			await apiFetch(`/api/properties/${caseDetails.property_id}`, {
+			await apiFetch(`/properties/${caseDetails.property_id}`, {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -356,7 +356,7 @@
 
 		try {
 			const payload = buildCasePayload();
-			const result = await apiFetch('/api/cases', {
+			const result = await apiFetch('/cases', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(payload)
