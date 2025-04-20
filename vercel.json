@@ -1,0 +1,9 @@
+{
+    "rewrites": [
+      {
+        "source": "/api/(.*)",
+        "destination": "https://wisefile-be.onrender.com/api/$1"
+      }
+    ]
+  }
+  
