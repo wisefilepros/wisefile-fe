@@ -162,36 +162,59 @@
 	}
 
 	async function createProperty(addressObj) {
-	try {
-		const payload = {
-			client_id: user.clientId,
-			property_code: addressObj.propertyCode,
-			address: `${addressObj.streetNumber} ${addressObj.streetName}`.trim(),
-			city: addressObj.city,
-			state: addressObj.state,
-			zip: addressObj.postalCode,
-			formatted_address: `${addressObj.streetNumber} ${addressObj.streetName}, ${addressObj.city}, ${addressObj.state} ${addressObj.postalCode}`,
-			is_active: true
-		};
+		try {
+			const payload = {
+				client_id: user.clientId,
+				property_code: addressObj.propertyCode,
+				address: `${addressObj.streetNumber} ${addressObj.streetName}`.trim(),
+				city: addressObj.city,
+				state: addressObj.state,
+				zip: addressObj.postalCode,
+				formatted_address: `${addressObj.streetNumber} ${addressObj.streetName}, ${addressObj.city}, ${addressObj.state} ${addressObj.postalCode}`,
+				is_active: true
+			};
 
-		const result = await apiFetch('/api/properties', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(payload)
-		});
+			const result = await apiFetch('/api/properties', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload)
+			});
 
-		properties = [...properties, result];
-		caseDetails.property_id = result._id;
-		caseDetails.formattedAddress = result.formatted_address;
+			properties = [...properties, result];
+			caseDetails.property_id = result._id;
+			caseDetails.formattedAddress = result.formatted_address;
 
-		return result;
-	} catch (err) {
-		console.error('Failed to create property:', err);
-		alert('Failed to create property. Please try again.');
-		return null;
+			return result;
+		} catch (err) {
+			console.error('Failed to create property:', err);
+			alert('Failed to create property. Please try again.');
+			return null;
+		}
 	}
-}
 
+	async function createTenant(tenantObj) {
+		try {
+			const payload = {
+				client_id: user.clientId,
+				full_name: getFullName(tenantObj),
+				email: tenantObj.email || '',
+				phone_number: tenantObj.phone || '',
+				associated_properties: [caseDetails.property_id]
+			};
+
+			const result = await apiFetch('/api/tenants', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload)
+			});
+
+			return result;
+		} catch (err) {
+			console.error('Tenant creation failed:', err);
+			alert('Unable to save tenant. Please try again.');
+			return null;
+		}
+	}
 
 	function handleDocumentStatus(type, value) {
 		caseDetails.documents[type].status = value;
@@ -205,31 +228,51 @@
 		caseDetails.missing_attachments_reason[type].reason = value;
 	}
 
-	async function handleFileUpload(event, type) {
+	function handleFileUpload(event, type) {
 		const file = event.target.files[0];
 		if (!file) return;
 
-		const formData = new FormData();
-		formData.append('file', file);
-		formData.append('client_id', user.clientId);
-		formData.append('type', type);
+		caseDetails.documents[type] = {
+			file,
+			status: 'pending',
+			type,
+			explanation: ''
+		};
+	}
 
-		try {
-			const res = await apiFetch('/api/documents', {
-				method: 'POST',
-				body: formData
-			});
-			if (!res.ok) throw new Error('Upload failed');
-			const uploaded = await res.json();
+	async function uploadDocumentsForCase(caseId) {
+		const entries = Object.entries(caseDetails.documents);
 
-			caseDetails.documents[type] = {
-				file: uploaded.name,
-				status: 'attached',
-				explanation: ''
-			};
-		} catch (err) {
-			console.error(`Failed to upload ${type}:`, err);
-			alert(`Upload for ${type} failed.`);
+		for (const [type, doc] of entries) {
+			if (!doc?.file || doc.status === 'attached') continue;
+
+			const formData = new FormData();
+			formData.append('file', doc.file);
+			formData.append('client_id', user.clientId);
+			formData.append('type', type);
+			formData.append('is_temporary', false);
+
+			try {
+				const res = await apiFetch('/api/documents', {
+					method: 'POST',
+					body: formData
+				});
+				if (!res.ok) throw new Error('Upload failed');
+				const uploaded = await res.json();
+
+				// Link to the case
+				await apiFetch('/api/documents/link-to-case', {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						name: uploaded.name,
+						case_id: caseId,
+						is_temporary: false
+					})
+				});
+			} catch (err) {
+				console.error(`Upload/link failed for ${type}:`, err);
+			}
 		}
 	}
 
@@ -237,23 +280,27 @@
 		return [t.firstName, t.lastName].filter(Boolean).join(' ');
 	}
 
-	function addTenant() {
+	async function addTenant() {
 		if (!newTenant.firstName || !newTenant.lastName) {
 			alert('First and last name are required.');
 			return;
 		}
-		const tenant = {
-			_id: crypto.randomUUID(),
-			full_name: getFullName(newTenant),
-			email: newTenant.email || '',
-			phone: newTenant.phone || '',
-			address: {
-				formatted: caseDetails.formattedAddress || ''
-			},
-			tenant_code: newTenant.tenantCode || ''
-		};
-		caseDetails.tenants = [...caseDetails.tenants, tenant];
-		newTenant = { firstName: '', lastName: '', email: '', phone: '', tenantCode: '' };
+
+		const createdTenant = await createTenant(newTenant);
+
+		if (createdTenant?._id) {
+			caseDetails.tenants = [...caseDetails.tenants, createdTenant];
+			const property = await apiFetch(`/api/properties/${caseDetails.property_id}`);
+
+			await apiFetch(`/api/properties/${caseDetails.property_id}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					associated_tenants: [...new Set([...property.associated_tenants, createdTenant._id])]
+				})
+			});
+			newTenant = { firstName: '', lastName: '', email: '', phone: '', tenantCode: '' };
+		}
 	}
 
 	function removeTenant(index) {
@@ -314,6 +361,8 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(payload)
 			});
+
+			await uploadDocumentsForCase(result._id);
 
 			goto(`/app/cases/${result._id}`);
 		} catch (err) {
@@ -394,14 +443,14 @@
 								type="text"
 								class="form-input w-full bg-gray-100"
 								bind:value={caseDetails.newAddress.state}
-								id="state"  
+								id="state"
 							/>
 							<label for="postalCode" class="mt-2 block font-medium">Postal Code</label>
 							<input
 								type="text"
 								class="form-input w-full bg-gray-100"
 								bind:value={caseDetails.newAddress.postalCode}
-								id="postalCode" 
+								id="postalCode"
 							/>
 							<label for="propertyCode" class="mt-2 block font-medium">Property Code</label>
 							<input
@@ -459,7 +508,7 @@
 			</div>
 
 			<div class="mb-4">
-				<label for="plaintiffName" class="mb-1 block font-medium">Plaintiff Name</label>    
+				<label for="plaintiffName" class="mb-1 block font-medium">Plaintiff Name</label>
 				<input
 					type="text"
 					class="form-input w-full bg-gray-100"
@@ -485,9 +534,13 @@
 
 			<div class="mb-4">
 				<label for="primaryContact" class="mb-1 block font-medium">Primary Contact</label>
-				<select on:change={handlePrimaryContactSelection} class="form-select w-full bg-gray-100" id="primaryContact">
+				<select
+					on:change={handlePrimaryContactSelection}
+					class="form-select w-full bg-gray-100"
+					id="primaryContact"
+				>
 					<option value="">Select contact</option>
-					{#each users as u}
+					{#each users.filter((u) => u.is_active && u.role === 'client') as u}
 						<option value={u._id}>{u.full_name}</option>
 					{/each}
 				</select>
@@ -534,11 +587,21 @@
 				</div>
 				<div>
 					<label for="email" class="mb-1 block font-medium">Email</label>
-					<input type="email" class="form-input w-full bg-gray-100" bind:value={newTenant.email} id="email" />
+					<input
+						type="email"
+						class="form-input w-full bg-gray-100"
+						bind:value={newTenant.email}
+						id="email"
+					/>
 				</div>
 				<div>
 					<label for="phone" class="mb-1 block font-medium">Phone</label>
-					<input type="text" class="form-input w-full bg-gray-100" bind:value={newTenant.phone} id="phone" />
+					<input
+						type="text"
+						class="form-input w-full bg-gray-100"
+						bind:value={newTenant.phone}
+						id="phone"
+					/>
 				</div>
 			</div>
 
@@ -590,7 +653,7 @@
 
 			<!-- Filing PO Number -->
 			<div class="mb-4">
-				<label for="filingPoNumber" class="block font-medium">Filing PO Number</label>  
+				<label for="filingPoNumber" class="block font-medium">Filing PO Number</label>
 				<input
 					type="text"
 					class="form-input w-full bg-gray-100"
@@ -619,7 +682,9 @@
 						id="monthsUnpaid"
 					/>
 
-					<label for="currentMonthUnpaidDate" class="mt-4 block font-medium">Date of Current Month Unpaid</label>
+					<label for="currentMonthUnpaidDate" class="mt-4 block font-medium"
+						>Date of Current Month Unpaid</label
+					>
 					<small class="mb-1 block text-gray-500">Defaults to 1st of selected month</small>
 					<input
 						type="date"
@@ -638,19 +703,29 @@
 				</div>
 
 				<div>
-					<label for="holdover" class="block font-medium">Holdover?</label>   
+					<label for="holdover" class="block font-medium">Holdover?</label>
 					<div class="mb-4 flex gap-4">
 						<label class="inline-flex items-center">
-							<input type="radio" bind:group={caseDetails.rentFeesClaims.holdover} value={true} id="holdoverYes" />
+							<input
+								type="radio"
+								bind:group={caseDetails.rentFeesClaims.holdover}
+								value={true}
+								id="holdoverYes"
+							/>
 							<span class="ml-2">Yes</span>
 						</label>
 						<label class="inline-flex items-center">
-							<input type="radio" bind:group={caseDetails.rentFeesClaims.holdover} value={false} id="holdoverNo" />
+							<input
+								type="radio"
+								bind:group={caseDetails.rentFeesClaims.holdover}
+								value={false}
+								id="holdoverNo"
+							/>
 							<span class="ml-2">No</span>
 						</label>
 					</div>
 
-					<label for="isSubsidized" class="block font-medium">Is Rent Subsidized?</label> 
+					<label for="isSubsidized" class="block font-medium">Is Rent Subsidized?</label>
 					<div class="mb-4 flex gap-4">
 						<label class="inline-flex items-center">
 							<input
@@ -813,6 +888,16 @@
 			<h2 class="mb-4 text-2xl font-semibold">Upload Documents</h2>
 
 			{#each ['lease', 'ledger', 'demand', 'ownershipDeed'] as docType}
+				<!-- Ensure safe initialization for both doc and reason objects -->
+				{#if !caseDetails.documents[docType]}
+					{@html ''}
+					{(caseDetails.documents[docType] = { status: '', file: null })}
+				{/if}
+				{#if !caseDetails.missing_attachments_reason[docType]}
+					{@html ''}
+					{(caseDetails.missing_attachments_reason[docType] = { selectedOverride: '', reason: '' })}
+				{/if}
+
 				<div class="mb-6">
 					<label for={docType} class="mb-1 block font-medium capitalize">{docType}</label>
 					<input
@@ -820,6 +905,7 @@
 						on:change={(e) => handleFileUpload(e, docType)}
 						class="w-full bg-white"
 					/>
+
 					<select
 						bind:value={caseDetails.documents[docType].status}
 						on:change={(e) => handleDocumentStatus(docType, e.target.value)}

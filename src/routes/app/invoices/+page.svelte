@@ -72,8 +72,8 @@
 		<tbody class="divide-y divide-gray-200">
 			{#each filteredInvoices() as inv}
 				<tr class="odd:bg-white even:bg-gray-50 hover:bg-gray-100">
-					<td class="px-4 py-2">{inv.client_id}</td>
-					<td class="px-4 py-2">{inv.case_id}</td>
+					<td class="px-4 py-2">{inv.client_id?.display_name ?? inv.client_id}</td>
+					<td class="px-4 py-2">{inv.case_id?.case_number ?? inv.case_id}</td>
 					<td class="px-4 py-2 capitalize">{inv.status}</td>
 					<td class="px-4 py-2">${inv.amount?.toFixed(2)}</td>
 					<td class="px-4 py-2">{new Date(inv.invoice_date).toLocaleDateString()}</td>

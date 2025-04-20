@@ -1,7 +1,7 @@
 <script>
 	import UploadModal from '$lib/components/UploadModal.svelte'; // Create this next
 	export let data;
-	
+
 	let documents = data?.result || [];
 	let searchTerm = '';
 	let showUploadModal = false;
@@ -47,12 +47,12 @@
 		<tbody class="divide-y divide-gray-200">
 			{#each filteredDocuments() as doc}
 				<tr class="odd:bg-white even:bg-gray-50 hover:bg-gray-100">
-					<td class="px-4 py-2">{doc.client_id}</td>
-					<td class="px-4 py-2">{doc.case_id}</td>
+					<td class="px-4 py-2">{doc.client_id?.display_name ?? doc.client_id}</td>
+					<td class="px-4 py-2">{doc.case_id?.case_number ?? doc.case_id}</td>
 					<td class="px-4 py-2">{doc.name}</td>
 					<td class="px-4 py-2">{doc.file_type}</td>
 					<td class="px-4 py-2">{doc.description}</td>
-					<td class="px-4 py-2">{doc.uploaded_by}</td>
+					<td class="px-4 py-2">{doc.uploaded_by?.full_name ?? doc.uploaded_by} </td>
 					<td class="px-4 py-2">{new Date(doc.uploaded_at).toLocaleDateString()}</td>
 				</tr>
 			{:else}

@@ -15,8 +15,8 @@
 	const formatDate = (dateStr) => (dateStr ? new Date(dateStr).toLocaleDateString() : '—');
 
 	// Create unique lists for dropdown filters
-	const operatorOptions = [...new Set(cases.map((c) => c.operatorName).filter(Boolean))];
-	const attorneyOptions = [...new Set(cases.map((c) => c.attorneyName).filter(Boolean))];
+	const operatorOptions = [...new Set(cases.map((c) => c.operator?.full_name).filter(Boolean))];
+	const attorneyOptions = [...new Set(cases.map((c) => c.attorney?.full_name).filter(Boolean))];
 	const courtOptions = [...new Set(cases.map((c) => c.court_name).filter(Boolean))];
 
 	const filteredCases = () =>
@@ -25,8 +25,8 @@
 				.join(' ')
 				.toLowerCase()
 				.includes(searchTerm.toLowerCase());
-			const matchesOperator = !selectedOperator || c.operatorName === selectedOperator;
-			const matchesAttorney = !selectedAttorney || c.attorneyName === selectedAttorney;
+			const matchesOperator = !selectedOperator || c.operator?.full_name === selectedOperator;
+			const matchesAttorney = !selectedAttorney || c.attorney?.full_name === selectedAttorney;
 			const matchesCourt = !selectedCourt || c.court_name === selectedCourt;
 			return matchesSearch && matchesOperator && matchesAttorney && matchesCourt;
 		});
@@ -118,14 +118,14 @@
 			<tbody class="divide-y divide-gray-200">
 				{#each filteredCases() as c}
 					<tr class="odd:bg-white even:bg-gray-50 hover:bg-gray-100">
-						<td class="px-4 py-2">{c.clientName}</td>
+						<td class="px-4 py-2">{c.client?.display_name ?? c.client_id}</td>
 						<td class="px-4 py-2">
 							<a href={`/app/cases/${c._id}`} class="text-gray-700 hover:underline">
 								{c.case_number}
 							</a>
 						</td>
 						<td class="px-4 py-2">{c.status}</td>
-						<td class="px-4 py-2">{c.propertyAddress}</td>
+						<td class="px-4 py-2">{c.property?.formatted_address ?? c.property_id}</td>
 						<td class="px-4 py-2">{c.court_name ?? '—'}</td>
 						<td class="px-4 py-2">{formatDate(c.created_at)}</td>
 					</tr>
