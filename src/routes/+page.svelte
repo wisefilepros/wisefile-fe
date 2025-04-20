@@ -20,10 +20,10 @@
 				body: JSON.stringify({ email, password })
 			});
 
-			console.log('User logged in:', user);
-
 			auth.set({ isAuthenticated: true, user, role: user.role });
+			console.log('Redirecting to dashboard...');
 			goto('/app/dashboard');
+			console.log('Redirect complete.');
 		} catch (err) {
 			error = err.message;
 		} finally {
