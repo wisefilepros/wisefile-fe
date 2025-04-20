@@ -37,25 +37,35 @@
 		}
 	}
 
+	function getChangedFields() {
+		const changes = {};
+		if (full_name !== user.full_name) changes.full_name = full_name;
+		if (email !== user.email) changes.email = email;
+		if (phone_number !== user.phone_number) changes.phone_number = phone_number;
+		if (role !== user.role) changes.role = role;
+
+		const currentClientId = client_id?.toString().trim() || null;
+		const originalClientId = user.client_id?.toString().trim() || null;
+		if (currentClientId !== originalClientId) changes.client_id = currentClientId;
+
+		return changes;
+	}
+
 	async function submit() {
 		isSaving = true;
 		error = '';
 
 		try {
 			if (user) {
-				const updates = {
-					full_name,
-					email,
-					phone_number,
-					role,
-					client_id
-				};
+				const updates = getChangedFields();
 
-				await apiFetch(`/api/users/${user._id}`, {
-					method: 'PATCH',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(updates)
-				});
+				if (Object.keys(updates).length > 0) {
+					await apiFetch(`/api/users/${user._id}`, {
+						method: 'PATCH',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(updates)
+					});
+				}
 
 				if (password.trim()) {
 					await apiFetch('/api/passwords/reset', {
@@ -71,11 +81,12 @@
 					body: JSON.stringify({ full_name, email, phone_number, role, client_id })
 				});
 
+				console.log(newUser);
 				if (password.trim()) {
 					await apiFetch('/api/passwords', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ user_id: newUser._id, password: password.trim() })
+						body: JSON.stringify({ user_id: newUser.id, password: password.trim() })
 					});
 				}
 			}
@@ -112,7 +123,9 @@
 			<form autocomplete="off" on:submit|preventDefault={submit}>
 				<div class="space-y-4">
 					<div>
-						<label for="new_full_name" class="block text-sm font-medium text-gray-700">Full Name</label>
+						<label for="new_full_name" class="block text-sm font-medium text-gray-700"
+							>Full Name</label
+						>
 						<input
 							type="text"
 							name="new_full_name"
@@ -134,7 +147,9 @@
 					</div>
 
 					<div>
-						<label for="new_phone" class="block text-sm font-medium text-gray-700">Phone Number</label>
+						<label for="new_phone" class="block text-sm font-medium text-gray-700"
+							>Phone Number</label
+						>
 						<input
 							type="text"
 							name="new_phone"
@@ -156,19 +171,6 @@
 							<option value="client">Client</option>
 							<option value="operations">Operations</option>
 							<option value="attorney">Attorney</option>
-						</select>
-					</div>
-
-					<div>
-						<label for="new_client_id" class="block text-sm font-medium text-gray-700">Associated Company</label>
-						<select
-							class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm"
-							bind:value={client_id}
-						>
-							<option value="">No Associated Company</option>
-							{#each clients as client}
-								<option value={client._id}>{client.display_name} – ({client.legal_name})</option>
-							{/each}
 						</select>
 					</div>
 
