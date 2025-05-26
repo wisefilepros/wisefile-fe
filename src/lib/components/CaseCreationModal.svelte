@@ -261,11 +261,10 @@
 				const uploaded = await res.json();
 
 				// Link to the case
-				await apiFetch('/documents/link-to-case', {
+				await apiFetch(`/documents/${uploaded._id}`, {
 					method: 'PATCH',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
-						name: uploaded.name,
 						case_id: caseId,
 						is_temporary: false
 					})
