@@ -1,4 +1,5 @@
 <script>
+	import { auth } from '$lib/stores/auth';
 	import CaseCreationModal from '$lib/components/CaseCreationModal.svelte';
 	export let data;
 
@@ -93,12 +94,14 @@
 	</div>
 
 	<!-- New Case Button -->
-	<button
-		class="whitespace-nowrap rounded-md bg-gray-700 px-4 py-2 text-white shadow-sm hover:bg-gray-800"
-		on:click={openModal}
-	>
-		+ New Case
-	</button>
+	{#if $auth.user?.role === 'client'}
+		<button
+			class="whitespace-nowrap rounded-md bg-gray-700 px-4 py-2 text-white shadow-sm hover:bg-gray-800"
+			on:click={openModal}
+		>
+			+ New Case
+		</button>
+	{/if}
 </div>
 
 <!-- Scrollable Table -->
