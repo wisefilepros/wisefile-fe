@@ -94,7 +94,7 @@
 	</div>
 
 	<!-- New Case Button -->
-	{#if ['client'].includes($auth.role)}
+	{#if $auth.role == 'client'}
 		<button
 			class="whitespace-nowrap rounded-md bg-gray-700 px-4 py-2 text-white shadow-sm hover:bg-gray-800"
 			on:click={openModal}
