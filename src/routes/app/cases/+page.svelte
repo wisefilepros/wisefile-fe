@@ -3,6 +3,8 @@
 	import CaseCreationModal from '$lib/components/CaseCreationModal.svelte';
 	export let data;
 
+	console.log(auth); // Debugging: Log the auth store to check user role)
+
 	const cases = data?.result ?? [];
 	let searchTerm = '';
 	let selectedOperator = '';
