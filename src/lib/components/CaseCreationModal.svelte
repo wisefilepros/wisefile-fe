@@ -72,12 +72,25 @@
 	};
 
 	onMount(() => {
-		if ($auth.user?.client_id) {
-			loadData($auth.user.client_id._id);
-		} else {
-			loadError = 'No client ID found for this user.';
-		}
+		auth.subscribe(async (value) => {
+			user = value?.user;
+			if (user?.client_id) {
+				const clientId = typeof user.client_id === 'string' ? user.client_id : user.client_id._id;
+
+				await loadData(clientId);
+			} else {
+				loadError = 'No client ID found for this user.';
+			}
+		});
 	});
+
+	async function safeParse(res) {
+		try {
+			return await res.json();
+		} catch {
+			return '[Could not parse JSON]';
+		}
+	}
 
 	async function loadData(clientId) {
 		try {
@@ -88,14 +101,10 @@
 				apiFetch(`/tenants?clientId=${clientId}`)
 			]);
 
-			// Check responses and log raw status or JSON if available
-			if (!clientRes.ok)
-				console.error('❌ Failed: /clients', clientRes.status, await safeParse(clientRes));
-			if (!propRes.ok)
-				console.error('❌ Failed: /properties', propRes.status, await safeParse(propRes));
-			if (!userRes.ok) console.error('❌ Failed: /users', userRes.status, await safeParse(userRes));
-			if (!tenantRes.ok)
-				console.error('❌ Failed: /tenants', tenantRes.status, await safeParse(tenantRes));
+			if (!clientRes.ok) console.error('❌ /clients', clientRes.status, await safeParse(clientRes));
+			if (!propRes.ok) console.error('❌ /properties', propRes.status, await safeParse(propRes));
+			if (!userRes.ok) console.error('❌ /users', userRes.status, await safeParse(userRes));
+			if (!tenantRes.ok) console.error('❌ /tenants', tenantRes.status, await safeParse(tenantRes));
 
 			if (!clientRes.ok || !propRes.ok || !userRes.ok || !tenantRes.ok) {
 				throw new Error('One or more fetches failed.');
@@ -112,15 +121,6 @@
 			console.error('Error loading form data:', err);
 			loadError =
 				'Something went wrong while loading your form. Please refresh or contact support.';
-		}
-	}
-
-	// Helper: safely parse fetch responses
-	async function safeParse(res) {
-		try {
-			return await res.json();
-		} catch {
-			return '[Could not parse JSON]';
 		}
 	}
 
@@ -193,11 +193,19 @@
 				is_active: true
 			};
 
-			const result = await apiFetch('/properties', {
+			const res = await apiFetch('/properties', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(payload)
 			});
+
+			if (!res.ok) {
+				const error = await res.text();
+				console.error('Property creation failed:', error);
+				throw new Error('Invalid response from server');
+			}
+
+			const result = await res.json();
 
 			properties = [...properties, result];
 			caseDetails.property_id = result._id;
