@@ -75,7 +75,10 @@
 		auth.subscribe(async (value) => {
 			user = value?.user;
 			if (user?.client_id) {
-				const clientId = typeof user.client_id === 'string' ? user.client_id : user.client_id._id;
+				const clientId =
+					typeof $auth.user.client_id === 'string'
+						? $auth.user.client_id
+						: $auth.user.client_id._id;
 
 				await loadData(clientId);
 			} else {
