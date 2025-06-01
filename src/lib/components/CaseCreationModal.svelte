@@ -229,6 +229,13 @@
 		}
 	}
 
+	function handlePrimaryContactSelection(event) {
+		const selectedId = event.target.value;
+		const selectedUser = users.find((u) => u._id === selectedId);
+		caseDetails.primary_contact_id = selectedUser?._id;
+		caseDetails.primary_contact_full_name = selectedUser?.full_name;
+	}
+
 	async function createTenant(tenantObj) {
 		try {
 			const payload = {
