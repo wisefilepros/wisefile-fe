@@ -14,16 +14,5 @@ export async function apiFetch(path, options = {}) {
 		...rest
 	});
 
-	let data;
-	try {
-		data = await res.json();
-	} catch {
-		data = null;
-	}
-
-	if (!res.ok) {
-		throw new Error(data?.message || `Request failed with status ${res.status}`);
-	}
-
-	return data;
+	return res;
 }

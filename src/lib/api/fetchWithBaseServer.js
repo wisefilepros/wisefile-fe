@@ -10,5 +10,10 @@ export async function apiFetchServer(path, { cookie = '', ...options } = {}) {
 		}
 	});
 
-	return res;
+	if (!res.ok) {
+		const err = await res.json().catch(() => ({}));
+		throw new Error(err.message || 'Request failed');
+	}
+
+	return res.json();
 }
