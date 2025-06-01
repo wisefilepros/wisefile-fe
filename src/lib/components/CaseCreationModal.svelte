@@ -170,6 +170,7 @@
 		try {
 			const newProperty = await createProperty(caseDetails.newAddress);
 			if (!newProperty || !newProperty._id) throw new Error('Invalid property response');
+
 			properties = [...properties, newProperty];
 			caseDetails.property_id = newProperty._id;
 			caseDetails.formattedAddress = newProperty.formatted_address;
@@ -201,7 +202,7 @@
 
 			let result;
 			try {
-				result = await res.json(); // try to parse
+				result = await res.json();
 				console.log('🚀 Property response:', result);
 			} catch (e) {
 				console.error('❌ Failed to parse property response:', e);
@@ -213,8 +214,11 @@
 				throw new Error(result?.message || 'Property creation failed');
 			}
 
-			if (!result || !result._id) {
-				throw new Error('Invalid property response');
+			// Normalize _id from id
+			result._id = result._id || result.id;
+
+			if (!result._id) {
+				throw new Error('Invalid property response: missing _id');
 			}
 
 			return result;
