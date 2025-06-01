@@ -118,7 +118,7 @@
 			users = await userRes.json();
 			tenants = await tenantRes.json();
 			managementCompanies = clients[0]?.management_companies || [];
-			console.log(managementCompanies)
+			console.log(users)
 		} catch (err) {
 			console.error('Error loading form data:', err);
 			loadError =
