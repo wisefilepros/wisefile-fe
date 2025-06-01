@@ -73,8 +73,7 @@
 
 	onMount(() => {
 		if ($auth.user?.client_id) {
-			console.log('Loading data for client ID:', $auth.user);
-			loadData($auth.user.client_id);
+			loadData($auth.user.client_id._id);
 		} else {
 			loadError = 'No client ID found for this user.';
 		}
