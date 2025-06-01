@@ -79,7 +79,7 @@
 					typeof $auth.user.client_id === 'string'
 						? $auth.user.client_id
 						: $auth.user.client_id._id;
-
+				console.log('Client ID:', clientId);
 				await loadData(clientId);
 			} else {
 				loadError = 'No client ID found for this user.';
@@ -104,6 +104,7 @@
 				apiFetch(`/tenants?clientId=${clientId}`)
 			]);
 
+			// Debug failures
 			if (!clientRes.ok) console.error('❌ /clients', clientRes.status, await safeParse(clientRes));
 			if (!propRes.ok) console.error('❌ /properties', propRes.status, await safeParse(propRes));
 			if (!userRes.ok) console.error('❌ /users', userRes.status, await safeParse(userRes));
@@ -113,10 +114,7 @@
 				throw new Error('One or more fetches failed.');
 			}
 
-			const clientData = await clientRes.json();
-			clients = [clientData];
-			managementCompanies = clientData.management_companies || [];
-
+			clients = [await clientRes.json()];
 			properties = await propRes.json();
 			users = await userRes.json();
 			tenants = await tenantRes.json();
