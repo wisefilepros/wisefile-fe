@@ -72,19 +72,20 @@
 	};
 
 	onMount(() => {
-		auth.subscribe(async (value) => {
-			user = value?.user;
-			if (user) await loadData();
-		});
+		if ($auth.user?.client_id) {
+			loadData($auth.user.client_id);
+		} else {
+			loadError = 'No client ID found for this user.';
+		}
 	});
 
-	async function loadData() {
+	async function loadData(clientId) {
 		try {
 			const [clientRes, propRes, userRes, tenantRes] = await Promise.all([
-				apiFetch(`/clients/${user.clientId}`),
-				apiFetch(`/properties?clientId=${user.clientId}`),
-				apiFetch(`/users?clientId=${user.clientId}`),
-				apiFetch(`/tenants?clientId=${user.clientId}`)
+				apiFetch(`/clients/${clientId}`),
+				apiFetch(`/properties?clientId=${clientId}`),
+				apiFetch(`/users?clientId=${clientId}`),
+				apiFetch(`/tenants?clientId=${clientId}`)
 			]);
 
 			if (!clientRes.ok || !propRes.ok || !userRes.ok || !tenantRes.ok) {
