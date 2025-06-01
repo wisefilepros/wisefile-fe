@@ -74,7 +74,6 @@
 	onMount(() => {
 		if ($auth.user?.client_id) {
 			user = $auth.user;
-			console.log('User:', user);
 			loadData($auth.user.client_id._id);
 		} else {
 			loadError = 'No client ID found for this user.';
@@ -167,7 +166,7 @@
 	async function createProperty(addressObj) {
 		try {
 			const payload = {
-				client_id: user.clientId,
+				client_id: user.clientId._id,
 				property_code: addressObj.propertyCode,
 				address: `${addressObj.streetNumber} ${addressObj.streetName}`.trim(),
 				city: addressObj.city,
@@ -198,7 +197,7 @@
 	async function createTenant(tenantObj) {
 		try {
 			const payload = {
-				client_id: user.clientId,
+				client_id: user.clientId._id,
 				full_name: getFullName(tenantObj),
 				email: tenantObj.email || '',
 				phone_number: tenantObj.phone || '',
@@ -251,7 +250,7 @@
 
 			const formData = new FormData();
 			formData.append('file', doc.file);
-			formData.append('client_id', user.clientId);
+			formData.append('client_id', user.clientId._id);
 			formData.append('type', type);
 			formData.append('is_temporary', false);
 
@@ -334,7 +333,7 @@
 	function buildCasePayload() {
 		return {
 			type: caseDetails.caseType,
-			client_id: user.clientId,
+			client_id: user.clientId._id,
 			property_id: caseDetails.property_id,
 			tenants: caseDetails.tenants.map((t) => t._id),
 			management_company_id: caseDetails.management_company_id,
