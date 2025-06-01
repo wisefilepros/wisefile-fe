@@ -118,7 +118,7 @@
 			users = await userRes.json();
 			tenants = await tenantRes.json();
 			managementCompanies = clients[0]?.management_companies || [];
-			console.log(users)
+			console.log(users);
 		} catch (err) {
 			console.error('Error loading form data:', err);
 			loadError =
@@ -237,26 +237,35 @@
 		caseDetails.primary_contact_full_name = selectedUser?.full_name;
 	}
 
-	async function createTenant(tenantObj) {
+	async function createTenant() {
 		try {
-			const payload = {
-				client_id: $auth.user.client_id._id,
-				full_name: getFullName(tenantObj),
-				email: tenantObj.email || '',
-				phone_number: tenantObj.phone || '',
-				associated_properties: [caseDetails.property_id]
-			};
-
-			const result = await apiFetch('/tenants', {
+			const res = await apiFetch('/tenants', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(payload)
+				body: JSON.stringify(caseDetails.newTenant)
 			});
 
+			let result;
+			try {
+				result = await res.json();
+				console.log('🚀 Tenant response:', result);
+			} catch (e) {
+				console.error('❌ Failed to parse tenant response:', e);
+				throw new Error('Tenant API returned invalid JSON');
+			}
+
+			if (!res.ok) {
+				console.error('❌ Tenant creation failed:', res.status, result);
+				throw new Error(result?.message || 'Tenant creation failed');
+			}
+
+			if (!result || !result._id) {
+				throw new Error('Invalid createTenant response');
+			}
 			return result;
 		} catch (err) {
-			console.error('Tenant creation failed:', err);
-			alert('Unable to save tenant. Please try again.');
+			console.error('Failed to createTenant:', err);
+			alert('There was a problem during createTenant. Please try again.');
 			return null;
 		}
 	}
@@ -287,13 +296,12 @@
 
 	async function uploadDocumentsForCase(caseId) {
 		const entries = Object.entries(caseDetails.documents);
-
 		for (const [type, doc] of entries) {
 			if (!doc?.file || doc.status === 'attached') continue;
 
 			const formData = new FormData();
 			formData.append('file', doc.file);
-			formData.append('client_id', $auth.user.client_id._id);
+			formData.append('client_id', $auth.user.client_id._id || $auth.user.client_id);
 			formData.append('type', type);
 			formData.append('is_temporary', false);
 
@@ -302,14 +310,14 @@
 					method: 'POST',
 					body: formData
 				});
-				if (!res.ok) throw new Error('Upload failed');
-				const uploaded = await res.json();
 
-				// Link to the case
-				await apiFetch(`/documents/${uploaded._id}`, {
+				if (!res || !res._id) throw new Error('Upload failed');
+
+				await apiFetch('/documents/link-to-case', {
 					method: 'PATCH',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
+						name: res.name,
 						case_id: caseId,
 						is_temporary: false
 					})
@@ -325,25 +333,35 @@
 	}
 
 	async function addTenant() {
-		if (!newTenant.firstName || !newTenant.lastName) {
-			alert('First and last name are required.');
-			return;
-		}
-
-		const createdTenant = await createTenant(newTenant);
-
-		if (createdTenant?._id) {
-			caseDetails.tenants = [...caseDetails.tenants, createdTenant];
-			const property = await apiFetch(`/properties/${caseDetails.property_id}`);
-
-			await apiFetch(`/properties/${caseDetails.property_id}`, {
-				method: 'PATCH',
+		try {
+			const res = await apiFetch('/tenants', {
+				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					associated_tenants: [...new Set([...property.associated_tenants, createdTenant._id])]
-				})
+				body: JSON.stringify(caseDetails.newTenant)
 			});
-			newTenant = { firstName: '', lastName: '', email: '', phone: '', tenantCode: '' };
+
+			let result;
+			try {
+				result = await res.json();
+				console.log('🚀 Added Tenant:', result);
+			} catch (e) {
+				console.error('❌ Failed to parse addTenant response:', e);
+				throw new Error('Tenant API returned invalid JSON');
+			}
+
+			if (!res.ok) {
+				console.error('❌ Tenant add failed:', res.status, result);
+				throw new Error(result?.message || 'Add tenant failed');
+			}
+
+			if (!result || !result._id) {
+				throw new Error('Invalid addTenant response');
+			}
+			return result;
+		} catch (err) {
+			console.error('Failed to addTenant:', err);
+			alert('There was a problem during addTenant. Please try again.');
+			return null;
 		}
 	}
 
@@ -390,28 +408,35 @@
 	}
 
 	async function submitCase() {
-		if (
-			!caseDetails.acknowledgment.rentalReliefConfirmed ||
-			!caseDetails.acknowledgment.statementsConfirmed
-		) {
-			alert('Please confirm both acknowledgment boxes before submitting.');
-			return;
-		}
-
 		try {
-			const payload = buildCasePayload();
-			const result = await apiFetch('/cases', {
+			caseDetails.client_id = $auth.user.client_id._id || $auth.user.client_id;
+
+			const res = await apiFetch('/cases', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(payload)
+				body: JSON.stringify(caseDetails)
 			});
 
-			await uploadDocumentsForCase(result._id);
+			let result;
+			try {
+				result = await res.json();
+				console.log('🚀 Case created:', result);
+			} catch (e) {
+				console.error('❌ Failed to parse case response:', e);
+				throw new Error('Case API returned invalid JSON');
+			}
 
-			goto(`/app/cases/${result._id}`);
+			if (!res.ok || !result._id) {
+				console.error('❌ Case creation failed:', res.status, result);
+				throw new Error(result?.message || 'Case creation failed');
+			}
+
+			await uploadDocumentsForCase(result._id);
+			alert('Case created successfully!');
+			closeModal();
 		} catch (err) {
-			console.error('Error submitting case:', err);
-			alert('There was a problem submitting the case. Please try again.');
+			console.error('Failed to submit case:', err);
+			alert('There was a problem creating the case. Please try again.');
 		}
 	}
 </script>
