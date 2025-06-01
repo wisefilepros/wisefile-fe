@@ -117,6 +117,8 @@
 			properties = await propRes.json();
 			users = await userRes.json();
 			tenants = await tenantRes.json();
+			managementCompanies = clients[0]?.management_companies || [];
+			console.log(managementCompanies)
 		} catch (err) {
 			console.error('Error loading form data:', err);
 			loadError =
@@ -203,7 +205,6 @@
 			let result;
 			try {
 				result = await res.json();
-				console.log('🚀 Property response:', result);
 			} catch (e) {
 				console.error('❌ Failed to parse property response:', e);
 				throw new Error('Property API returned invalid JSON');
