@@ -88,18 +88,19 @@
 				apiFetch(`/tenants?clientId=${clientId}`)
 			]);
 
-			// Check responses one by one and log them
-			if (!clientRes.ok) console.error('❌ Failed: /clients', await clientRes.text());
-			if (!propRes.ok) console.error('❌ Failed: /properties', await propRes.text());
-			if (!userRes.ok) console.error('❌ Failed: /users', await userRes.text());
-			if (!tenantRes.ok) console.error('❌ Failed: /tenants', await tenantRes.text());
+			// Check responses and log raw status or JSON if available
+			if (!clientRes.ok)
+				console.error('❌ Failed: /clients', clientRes.status, await safeParse(clientRes));
+			if (!propRes.ok)
+				console.error('❌ Failed: /properties', propRes.status, await safeParse(propRes));
+			if (!userRes.ok) console.error('❌ Failed: /users', userRes.status, await safeParse(userRes));
+			if (!tenantRes.ok)
+				console.error('❌ Failed: /tenants', tenantRes.status, await safeParse(tenantRes));
 
-			// Throw if any failed
 			if (!clientRes.ok || !propRes.ok || !userRes.ok || !tenantRes.ok) {
 				throw new Error('One or more fetches failed.');
 			}
 
-			// If all succeeded
 			const clientData = await clientRes.json();
 			clients = [clientData];
 			managementCompanies = clientData.management_companies || [];
@@ -111,6 +112,15 @@
 			console.error('Error loading form data:', err);
 			loadError =
 				'Something went wrong while loading your form. Please refresh or contact support.';
+		}
+	}
+
+	// Helper: safely parse fetch responses
+	async function safeParse(res) {
+		try {
+			return await res.json();
+		} catch {
+			return '[Could not parse JSON]';
 		}
 	}
 
