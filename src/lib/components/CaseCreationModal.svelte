@@ -79,7 +79,6 @@
 					typeof $auth.user.client_id === 'string'
 						? $auth.user.client_id
 						: $auth.user.client_id._id;
-				console.log('Client ID:', clientId);
 				await loadData(clientId);
 			} else {
 				loadError = 'No client ID found for this user.';
@@ -200,17 +199,23 @@
 				body: JSON.stringify(payload)
 			});
 
-			if (!res.ok) {
-				const error = await res.text();
-				console.error('Property creation failed:', error);
-				throw new Error('Invalid response from server');
+			let result;
+			try {
+				result = await res.json(); // try to parse
+				console.log('🚀 Property response:', result);
+			} catch (e) {
+				console.error('❌ Failed to parse property response:', e);
+				throw new Error('Property API returned invalid JSON');
 			}
 
-			const result = await res.json();
+			if (!res.ok) {
+				console.error('❌ Property creation failed:', res.status, result);
+				throw new Error(result?.message || 'Property creation failed');
+			}
 
-			properties = [...properties, result];
-			caseDetails.property_id = result._id;
-			caseDetails.formattedAddress = result.formatted_address;
+			if (!result || !result._id) {
+				throw new Error('Invalid property response');
+			}
 
 			return result;
 		} catch (err) {
