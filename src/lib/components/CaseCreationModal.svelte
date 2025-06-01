@@ -99,7 +99,7 @@
 			const [clientRes, propRes, userRes, tenantRes] = await Promise.all([
 				apiFetch(`/clients/${clientId}`),
 				apiFetch(`/properties?clientId=${clientId}`),
-				apiFetch(`/users?clientId=${clientId}`),
+				apiFetch(`/users`),
 				apiFetch(`/tenants?clientId=${clientId}`)
 			]);
 
