@@ -960,7 +960,7 @@
 					<input
 						type="file"
 						on:change={(e) => handleFileUpload(e, docType)}
-						class="w-full bg-white"
+						class="w-full bg-gray-700 text-white"
 					/>
 
 					<select
