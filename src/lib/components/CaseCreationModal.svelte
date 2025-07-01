@@ -241,7 +241,7 @@
 			const res = await apiFetch('/tenants', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(caseDetails.newTenant)
+				body: JSON.stringify(newTenant)
 			});
 
 			let result;
