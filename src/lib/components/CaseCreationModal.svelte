@@ -300,10 +300,20 @@
 
 	async function addTenant() {
 		try {
+			// Prepare payload
+			const payload = {
+				first_name: newTenant.firstName,
+				last_name: newTenant.lastName,
+				full_name: `${newTenant.firstName} ${newTenant.lastName}`.trim(),
+				email: newTenant.email,
+				phone_number: newTenant.phone,
+				tenant_code: newTenant.tenantCode
+			};
+
 			const res = await apiFetch('/tenants', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(newTenant)
+				body: JSON.stringify(payload)
 			});
 
 			let result;
@@ -327,10 +337,11 @@
 			caseDetails.tenants = [...caseDetails.tenants, result];
 
 			newTenant = {
-				full_name: '',
+				firstName: '',
+				lastName: '',
 				email: '',
 				phone: '',
-				notes: ''
+				tenantCode: ''
 			};
 
 			return result;
