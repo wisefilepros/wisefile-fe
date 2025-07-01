@@ -236,39 +236,6 @@
 		caseDetails.primary_contact_full_name = selectedUser?.full_name;
 	}
 
-	async function createTenant() {
-		try {
-			const res = await apiFetch('/tenants', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(newTenant)
-			});
-
-			let result;
-			try {
-				result = await res.json();
-				console.log('🚀 Tenant response:', result);
-			} catch (e) {
-				console.error('❌ Failed to parse tenant response:', e);
-				throw new Error('Tenant API returned invalid JSON');
-			}
-
-			if (!res.ok) {
-				console.error('❌ Tenant creation failed:', res.status, result);
-				throw new Error(result?.message || 'Tenant creation failed');
-			}
-
-			if (!result || !result._id) {
-				throw new Error('Invalid createTenant response');
-			}
-			return result;
-		} catch (err) {
-			console.error('Failed to createTenant:', err);
-			alert('There was a problem during createTenant. Please try again.');
-			return null;
-		}
-	}
-
 	function handleDocumentStatus(type, value) {
 		caseDetails.documents[type].status = value;
 		caseDetails.missing_attachments_reason[type].selectedOverride = value;
@@ -336,7 +303,7 @@
 			const res = await apiFetch('/tenants', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(caseDetails.newTenant)
+				body: JSON.stringify(newTenant)
 			});
 
 			let result;
@@ -356,6 +323,16 @@
 			if (!result || !result._id) {
 				throw new Error('Invalid addTenant response');
 			}
+
+			caseDetails.tenants = [...caseDetails.tenants, result];
+
+			newTenant = {
+				full_name: '',
+				email: '',
+				phone: '',
+				notes: ''
+			};
+
 			return result;
 		} catch (err) {
 			console.error('Failed to addTenant:', err);
