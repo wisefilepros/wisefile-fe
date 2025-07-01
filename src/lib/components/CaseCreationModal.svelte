@@ -675,19 +675,19 @@
 					<table class="w-full border bg-white text-sm">
 						<thead class="bg-gray-100">
 							<tr>
-								<th class="px-4 py-2">Name</th>
-								<th class="px-4 py-2">Email</th>
-								<th class="px-4 py-2">Phone</th>
-								<th class="px-4 py-2">Actions</th>
+								<th class="text-center">Name</th>
+								<th class="text-center">Email</th>
+								<th class="text-center">Phone</th>
+								<th class="text-center">Actions</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#each caseDetails.tenants as tenant, i (tenant._id)}
 								<tr class="border-t">
-									<td class="px-4 py-2">{tenant.full_name}</td>
-									<td class="px-4 py-2">{tenant.email}</td>
-									<td class="px-4 py-2">{tenant.phone}</td>
-									<td class="px-4 py-2">
+									<td class="text-center">{tenant.full_name}</td>
+									<td class="text-center">{tenant.email}</td>
+									<td class="text-center">{tenant.phone_number}</td>
+									<td class="text-center">
 										<button class="text-red-600 hover:underline" on:click={() => removeTenant(i)}
 											>Remove</button
 										>
