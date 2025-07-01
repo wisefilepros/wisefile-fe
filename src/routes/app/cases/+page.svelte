@@ -122,14 +122,14 @@
 			<tbody class="divide-y divide-gray-200">
 				{#each filteredCases() as c}
 					<tr class="odd:bg-white even:bg-gray-50 hover:bg-gray-100">
-						<td class="px-4 py-2">{c.client?.display_name ?? c.client_id}</td>
+						<td class="px-4 py-2">{c.client_id?.display_name ?? c.client_id._id}</td>
 						<td class="px-4 py-2">
 							<a href={`/app/cases/${c._id}`} class="text-gray-700 hover:underline">
 								{c.case_number}
 							</a>
 						</td>
 						<td class="px-4 py-2">{c.status}</td>
-						<td class="px-4 py-2">{c.property?.formatted_address ?? c.property_id}</td>
+						<td class="px-4 py-2">{c.property_id?.formatted_address ?? c.property_id.address}</td>
 						<td class="px-4 py-2">{c.court_name ?? '—'}</td>
 						<td class="px-4 py-2">{formatDate(c.created_at)}</td>
 					</tr>
