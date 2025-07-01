@@ -413,7 +413,8 @@
 				throw new Error('Case API returned invalid JSON');
 			}
 
-			if (!res.ok || !result._id) {
+			const caseId = result._id || result.id;
+			if (!res.ok || !caseId) {
 				console.error('❌ Case creation failed:', res.status, result);
 				throw new Error(result?.message || 'Case creation failed');
 			}
