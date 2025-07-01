@@ -396,12 +396,12 @@
 
 	async function submitCase() {
 		try {
-			caseDetails.client_id = $auth.user.client_id._id || $auth.user.client_id;
+			const payload = buildCasePayload();
 
 			const res = await apiFetch('/cases', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(caseDetails)
+				body: JSON.stringify(payload) // ✅ Now using the cleaned-up payload
 			});
 
 			let result;
