@@ -19,6 +19,7 @@
 	const operatorOptions = [...new Set(cases.map((c) => c.operator?.full_name).filter(Boolean))];
 	const attorneyOptions = [...new Set(cases.map((c) => c.attorney?.full_name).filter(Boolean))];
 	const courtOptions = [...new Set(cases.map((c) => c.court_name).filter(Boolean))];
+	console.log(cases)
 
 	const filteredCases = () =>
 		cases.filter((c) => {
