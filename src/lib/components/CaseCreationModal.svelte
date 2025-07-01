@@ -309,8 +309,6 @@
 				tenant_code: newTenant.tenantCode
 			};
 
-			console.log('📦 Submitting tenant payload:', payload);
-
 			const res = await apiFetch('/tenants', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -385,7 +383,7 @@
 			type: caseDetails.caseType,
 			client_id: $auth.user.client_id._id,
 			property_id: caseDetails.property_id,
-			tenants: caseDetails.tenants.map((t) => t._id),
+			tenants: caseDetails.tenants.map((t) => t._id || t.id),
 			management_company_id: caseDetails.management_company_id,
 			primary_contact_id: caseDetails.primary_contact_id,
 			status: 'Demand Posted',
@@ -994,7 +992,24 @@
 		<!-- STEP 6 -->
 		{#if currentStep === 6}
 			<h2 class="mb-4 text-2xl font-semibold">Acknowledgment</h2>
-
+			<p class="mb-4 border-l-4 border-gray-400 pl-4 text-sm leading-relaxed text-gray-700">
+				To assure you can file the contemplated eviction case please acknowledge that you have
+				reviewed whether the above resident(s) are pending or participating in a Rental Relief
+				Program, which may limit your ability to file this case. Please acknowledge that you have:
+				<br />1. A detailed understanding of any current or pending rental relief programs related
+				to the above listed resident(s).
+				<br />2. Are aware of no limitations placed upon the ability of the property owner,
+				management company or any other party to file the eviction case.
+				<br />3. You understand that if you have any questions, concerns or require additional
+				guidance you should not file this case until you have consulted with your attorney or
+				company resources with knowledge to clarify such matters.
+				<br /><br />
+				You also hereby affirm and attest that the statements set forth in this filing are true and correct.
+				<br /><br />
+				By clicking the boxes below, you are acknowledging and certifying that the resident(s) is/are
+				eligible to have an eviction case filed against them and are not subject to limitation for any
+				reason.
+			</p>
 			<div class="space-y-3">
 				<label class="flex items-center gap-2">
 					<input type="checkbox" bind:checked={caseDetails.acknowledgment.rentalReliefConfirmed} />
