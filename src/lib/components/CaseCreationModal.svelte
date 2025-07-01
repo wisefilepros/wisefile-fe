@@ -300,7 +300,6 @@
 
 	async function addTenant() {
 		try {
-			// Prepare payload
 			const payload = {
 				first_name: newTenant.firstName,
 				last_name: newTenant.lastName,
@@ -309,6 +308,8 @@
 				phone_number: newTenant.phone,
 				tenant_code: newTenant.tenantCode
 			};
+
+			console.log('📦 Submitting tenant payload:', payload);
 
 			const res = await apiFetch('/tenants', {
 				method: 'POST',
@@ -330,7 +331,8 @@
 				throw new Error(result?.message || 'Add tenant failed');
 			}
 
-			if (!result || !result._id) {
+			const tenantId = result._id || result.id;
+			if (!tenantId) {
 				throw new Error('Invalid addTenant response');
 			}
 
