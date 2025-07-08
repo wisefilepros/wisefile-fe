@@ -8,7 +8,7 @@ export async function load({ cookies, params }) {
 			: '';
 
 		const caseId = params.id;
-
+		console.log(caseId);
 		// Fetch populated case record (includes client, users, tenants, etc.)
 		let caseRecord;
 		try {
