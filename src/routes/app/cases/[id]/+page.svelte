@@ -5,6 +5,7 @@
 	import { apiFetch } from '$lib/api/fetchWithBase';
 
 	export let data;
+	console.log(data)
 	let { user } = $auth;
 	let selectedCaseId = data?.caseRecord.case._id;
 	let messages = data.messages ?? [];
@@ -391,7 +392,7 @@
 
 				<div>
 					<p class="text-sm font-semibold">Defendant:</p>
-					<p class="text-sm text-gray-800">{caseDetails?.tenant_id?.map(tenant => tenant.full_name).join(', ')}</p>
+					<p class="text-sm text-gray-800">{caseDetails?.tenants?.map(tenant => tenant.full_name).join(', ')}</p>
 				</div>
 				<!-- Assigned Attorney -->
 				<div>
