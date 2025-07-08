@@ -7,7 +7,7 @@
 	export let data;
 	console.log(data)
 	let { user } = $auth;
-	let selectedCaseId = caseData._id;
+	let selectedCaseId = data._id;
 	let messages = data.messages ?? [];
 	let activeTab = 'details';
 	let progressContainer;
@@ -50,7 +50,7 @@
 
 	// Users from same client (excluding current user)
 	const ccOptions =
-		caseData.client.users
+		data.client.users
 			?.filter((u) => u._id !== currentUser)
 			.map((u) => ({
 				_id: u._id,

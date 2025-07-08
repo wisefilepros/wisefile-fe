@@ -1,7 +1,7 @@
 <script>
 	import { auth } from '$lib/stores/auth';
 	export let data;
-
+	console.log(data);
 	const openCases = data?.result?.openCases ?? 0;
 	const unpaidInvoices = data?.result?.unpaidInvoices ?? 0;
 	const unreadMessages = data?.result?.unreadMessages ?? 0;
