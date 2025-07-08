@@ -11,18 +11,17 @@ export async function apiFetchServer(path, { cookie = '', ...options } = {}) {
 	});
 
 	if (!res.ok) {
-		// Try to parse error message
-		let errorMessage = `Request failed (${res.status})`;
+		let bodyText = '';
 		try {
-			const errorJson = await res.json();
-			errorMessage = errorJson?.message || errorMessage;
-			console.error(`❌ API ${path} responded with ${res.status}:`, errorJson);
+			bodyText = await res.text(); // ✅ read once
+			const parsed = JSON.parse(bodyText);
+			console.error(`❌ API ${path} error ${res.status}:`, parsed);
+			throw new Error(parsed.message || `Request failed (${res.status})`);
 		} catch {
-			const text = await res.text();
-			console.error(`❌ API ${path} responded with ${res.status}:`, text);
+			console.error(`❌ API ${path} error ${res.status}:`, bodyText);
+			throw new Error(`Request failed (${res.status})`);
 		}
-		throw new Error(errorMessage);
 	}
 
-	return res.json();
+	return res.json(); // ✅ this only runs when res.ok is true
 }
