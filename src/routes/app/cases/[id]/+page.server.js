@@ -13,7 +13,7 @@ export async function load({ cookies, params }) {
 		// Fetch populated case record (includes client, users, tenants, etc.)
 		let caseRecord;
 		try {
-			caseRecord = await apiFetchServer(`/api/cases/${caseId}`, {
+			caseRecord = await apiFetchServer(`/api/cases/${caseId}/detail`, {
 				cookie: cookieHeader
 			});
 		} catch (err) {
