@@ -2,13 +2,14 @@ import { apiFetchServer } from '$lib/api/fetchWithBaseServer';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, params }) {
+	console.log('Loading case details for case ID:', params.id);
 	try {
 		const cookieHeader = cookies.get('accessToken')
 			? `accessToken=${cookies.get('accessToken')}`
 			: '';
 
 		const caseId = params.id;
-		console.log(caseId);
+		
 		// Fetch populated case record (includes client, users, tenants, etc.)
 		let caseRecord;
 		try {
@@ -41,8 +42,6 @@ export async function load({ cookies, params }) {
 			console.error('❌ Failed to load messages:', err);
 			return { error: 'Could not load messages.' };
 		}
-
-		console.log('Case Details load:', { caseRecord, caseStatuses, messages });
 
 		return {
 			caseRecord,
