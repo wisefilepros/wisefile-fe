@@ -7,7 +7,7 @@
 	export let data;
 	console.log('Case details data:', data);
 	let { user } = $auth;
-	let selectedCaseId = data._id;
+	let selectedCaseId = data?.caseRecord.case._id;
 	let messages = data.messages ?? [];
 	let activeTab = 'details';
 	let progressContainer;
@@ -16,9 +16,9 @@
 	let showFeeForm = false;
 	let messageContent = '';
 	let isSending = false;
-	let caseDetails = data?.caseRecord || null;
+	let caseDetails = data?.caseRecord.case || null;
 	let statuses = data?.caseStatuses || [];
-	let currentUser = data?.me?._id || '';
+	let currentUser = user._id || '';
 	let caseId = caseDetails?._id || '';
 	let isEditingDetails = false;
 	let editableDetails = {};
