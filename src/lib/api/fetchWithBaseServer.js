@@ -11,8 +11,17 @@ export async function apiFetchServer(path, { cookie = '', ...options } = {}) {
 	});
 
 	if (!res.ok) {
-		const err = await res.json().catch(() => ({}));
-		throw new Error(err.message || 'Request failed');
+		// Try to parse error message
+		let errorMessage = `Request failed (${res.status})`;
+		try {
+			const errorJson = await res.json();
+			errorMessage = errorJson?.message || errorMessage;
+			console.error(`❌ API ${path} responded with ${res.status}:`, errorJson);
+		} catch {
+			const text = await res.text();
+			console.error(`❌ API ${path} responded with ${res.status}:`, text);
+		}
+		throw new Error(errorMessage);
 	}
 
 	return res.json();

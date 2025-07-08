@@ -2,7 +2,6 @@ import { apiFetchServer } from '$lib/api/fetchWithBaseServer';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, params }) {
-	console.log('Loading case details for case ID:', params.id);
 	try {
 		const cookieHeader = cookies.get('accessToken')
 			? `accessToken=${cookies.get('accessToken')}`
