@@ -5,7 +5,7 @@
 	import { apiFetch } from '$lib/api/fetchWithBase';
 
 	export let data;
-	console.log(data)
+	console.log(data);
 	let { user } = $auth;
 	let selectedCaseId = data._id;
 	let messages = data.messages ?? [];
@@ -50,7 +50,7 @@
 
 	// Users from same client (excluding current user)
 	const ccOptions =
-		data.client.users
+		data?.client?.users
 			?.filter((u) => u._id !== currentUser)
 			.map((u) => ({
 				_id: u._id,
@@ -560,7 +560,9 @@
 			<div class="mb-4 flex flex-wrap gap-4">
 				<!-- Recipients -->
 				<div class="relative w-1/2">
-					<label for="recipients" class="mb-1 block text-xs font-semibold text-gray-700">Send To</label>
+					<label for="recipients" class="mb-1 block text-xs font-semibold text-gray-700"
+						>Send To</label
+					>
 					<button
 						type="button"
 						class="flex min-h-[42px] w-full cursor-pointer flex-wrap items-center gap-2 rounded border border-gray-300 bg-white px-3 py-2 text-left text-sm shadow-sm"
