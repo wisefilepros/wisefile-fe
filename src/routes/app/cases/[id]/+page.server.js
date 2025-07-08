@@ -22,6 +22,13 @@ export async function load({ cookies, params }) {
 			cookie: cookieHeader
 		});
 
+		console.log( 'Case Details load:', {
+			caseRecord,
+			dropdowns,
+			caseStatuses,
+			messages
+		});
+
 		return {
 			caseRecord,
 			dropdowns,
