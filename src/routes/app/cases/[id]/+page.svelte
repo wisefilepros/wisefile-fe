@@ -5,7 +5,6 @@
 	import { apiFetch } from '$lib/api/fetchWithBase';
 
 	export let data;
-	console.log('Case details data:', data);
 	let { user } = $auth;
 	let selectedCaseId = data?.caseRecord.case._id;
 	let messages = data.messages ?? [];
@@ -340,11 +339,11 @@
 			<div class="grid grid-cols-2 gap-4">
 				<div>
 					<p class="text-sm font-semibold">Case Type:</p>
-					<p class="text-sm text-gray-800">{caseDetails?.type}</p>
+					<p class="text-sm text-gray-800">{caseDetails?.type?.replace(/\b\w/g, (c) => c.toUpperCase())}</p>
 				</div>
 				<div>
 					<p class="text-sm font-semibold">Property Address:</p>
-					<p class="text-sm text-gray-800">{caseDetails?.property_id}</p>
+					<p class="text-sm text-gray-800">{caseDetails?.property_id?.formatted_address}</p>
 				</div>
 
 				<div>
@@ -387,12 +386,12 @@
 				</div>
 				<div>
 					<p class="text-sm font-semibold">Plaintiff:</p>
-					<p class="text-sm text-gray-800">{caseDetails?.client_id}</p>
+					<p class="text-sm text-gray-800">{caseDetails?.client_id?.legal_name}</p>
 				</div>
 
 				<div>
 					<p class="text-sm font-semibold">Defendant:</p>
-					<p class="text-sm text-gray-800">{caseDetails?.tenant_id}</p>
+					<p class="text-sm text-gray-800">{caseDetails?.tenant_id?.map(tenant => tenant.full_name).join(', ')}</p>
 				</div>
 				<!-- Assigned Attorney -->
 				<div>
