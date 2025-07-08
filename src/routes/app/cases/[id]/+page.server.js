@@ -10,19 +10,37 @@ export async function load({ cookies, params }) {
 		const caseId = params.id;
 
 		// Fetch populated case record (includes client, users, tenants, etc.)
-		const caseRecord = await apiFetchServer(`/api/cases/${caseId}`, {
-			cookie: cookieHeader
-		});
+		let caseRecord;
+		try {
+			caseRecord = await apiFetchServer(`/api/cases/${caseId}`, {
+				cookie: cookieHeader
+			});
+		} catch (err) {
+			console.error('❌ Failed to load caseRecord:', err);
+			return { error: 'Could not load case data.' };
+		}
 
 		// Case status options for status dropdown
-		const caseStatuses = await apiFetchServer(`/api/utils/case-status-options`, {
-			cookie: cookieHeader
-		});
+		let caseStatuses = [];
+		try {
+			caseStatuses = await apiFetchServer(`/api/utils/case-status-options`, {
+				cookie: cookieHeader
+			});
+		} catch (err) {
+			console.error('❌ Failed to load case statuses:', err);
+			return { error: 'Could not load case status options.' };
+		}
 
 		// Messages for this case only
-		const messages = await apiFetchServer(`/api/messages/by-case?case_id=${caseId}`, {
-			cookie: cookieHeader
-		});
+		let messages = [];
+		try {
+			messages = await apiFetchServer(`/api/messages/by-case?case_id=${caseId}`, {
+				cookie: cookieHeader
+			});
+		} catch (err) {
+			console.error('❌ Failed to load messages:', err);
+			return { error: 'Could not load messages.' };
+		}
 
 		console.log('Case Details load:', { caseRecord, caseStatuses, messages });
 
