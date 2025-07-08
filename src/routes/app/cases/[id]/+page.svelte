@@ -5,6 +5,7 @@
 	import { apiFetch } from '$lib/api/fetchWithBase';
 
 	export let data;
+	console.log('Case details data:', data);
 	let { user } = $auth;
 	let selectedCaseId = data._id;
 	let messages = data.messages ?? [];
