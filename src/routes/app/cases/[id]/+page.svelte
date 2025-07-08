@@ -514,7 +514,7 @@
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-gray-300">
-					{#if caseDetails.internal_notes?.length > 0}
+					{#if caseDetails?.internal_notes}
 						{#each caseDetails.internal_notes as note}
 							<tr>
 								<td class="py-2">{note.note}</td>
